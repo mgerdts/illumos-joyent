@@ -22,7 +22,7 @@
 /*
  * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
- * Copyright 2016 Joyent, Inc.
+ * Copyright 2017 Joyent, Inc.
  */
 /*
  * Copyright (c) 2009-2010, Intel Corporation.
@@ -311,6 +311,12 @@ AcpiOsTableOverride(ACPI_TABLE_HEADER *ExistingTable,
 ACPI_STATUS
 AcpiOsPhysicalTableOverride(ACPI_TABLE_HEADER *ExistingTable,
     ACPI_PHYSICAL_ADDRESS *NewAddress, UINT32 *NewTableLength)
+{
+	return (AE_SUPPORT);
+}
+
+ACPI_STATUS
+AcpiOsEnterSleep(UINT8 SleepState, UINT32 RegaValue, UINT32 RegbValue)
 {
 	return (AE_SUPPORT);
 }

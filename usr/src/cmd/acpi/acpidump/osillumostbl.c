@@ -43,7 +43,7 @@
  */
 
 /*
- * Copyright 2016 Joyent, Inc.
+ * Copyright 2017 Joyent, Inc.
  */
 
 #include <stdarg.h>
@@ -68,7 +68,6 @@ typedef struct osl_table_info
 /* Local prototypes */
 static ACPI_STATUS
 OslTableInitialize(void);
-static ACPI_STATUS OslTableNameFromFile(char *, char *, UINT32 *);
 static ACPI_STATUS OslAddTableToList(char *);
 static ACPI_STATUS OslMapTable(ACPI_SIZE, char *, ACPI_TABLE_HEADER **);
 static void OslUnmapTable(ACPI_TABLE_HEADER *);
@@ -962,47 +961,6 @@ OslUnmapTable(ACPI_TABLE_HEADER *Table)
 	}
 }
 
-/*
- *
- * FUNCTION:    OslTableNameFromFile
- *
- * PARAMETERS:  Filename            - File that contains the desired table
- *              Signature           - Pointer to 4-character buffer to store
- *                                    extracted table signature.
- *              Instance            - Pointer to integer to store extracted
- *                                    table instance number.
- *
- * RETURN:      Status; Table name is extracted if AE_OK.
- *
- * DESCRIPTION: Extract table signature and instance number from a table file
- *              name.
- *
- */
-static ACPI_STATUS
-OslTableNameFromFile(char *Filename, char *Signature, UINT32 *Instance)
-{
-	/* Ignore meaningless files */
-
-	if (strlen(Filename) < ACPI_NAME_SIZE) {
-		return (AE_BAD_SIGNATURE);
-	}
-
-	/* Extract instance number */
-
-	if (isdigit((int)Filename[ACPI_NAME_SIZE])) {
-		sscanf(&Filename[ACPI_NAME_SIZE], "%u", Instance);
-	} else if (strlen(Filename) != ACPI_NAME_SIZE) {
-		return (AE_BAD_SIGNATURE);
-	} else {
-		*Instance = 0;
-	}
-
-	/* Extract signature */
-
-	ACPI_MOVE_NAME(Signature, Filename);
-	return (AE_OK);
-}
-
 UINT32
 CmGetFileSize(ACPI_FILE File)
 {
@@ -1025,33 +983,6 @@ void
 AcpiOsFree(void *p)
 {
 	free(p);
-}
-
-ACPI_FILE
-AcpiOsOpenFile(const char *Path, UINT8 Modes)
-{
-	char mode[3];
-
-	bzero(mode, sizeof (mode));
-	if ((Modes & ACPI_FILE_READING) != 0)
-		(void) strlcat(mode, "r", sizeof (mode));
-
-	if ((Modes & ACPI_FILE_WRITING) != 0)
-		(void) strlcat(mode, "w", sizeof (mode));
-
-	return (fopen(Path, mode));
-}
-
-void
-AcpiOsCloseFile(ACPI_FILE File)
-{
-	fclose(File);
-}
-
-int
-AcpiOsReadFile(ACPI_FILE File, void *Buffer, ACPI_SIZE Size, ACPI_SIZE Count)
-{
-	return (fread(Buffer, Size, Count, File));
 }
 
 void *
