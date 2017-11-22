@@ -19,7 +19,7 @@
  * CDDL HEADER END
  */
 /*
- * Copyright 2016 Joyent, Inc.
+ * Copyright 2017 Joyent, Inc.
  * Copyright 2011 Nexenta Systems, Inc.  All rights reserved.
  * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
@@ -42,8 +42,8 @@ extern "C" {
 #include <sys/ctype.h>
 #else
 #include <ctype.h>
-#include <strings.h>
 #include <stdlib.h>
+#include <strings.h>
 #endif
 
 /* Function name used for debug output. */
@@ -69,12 +69,17 @@ uint32_t acpi_strtoul(const char *, char **, int);
  * We should use acgcc.h, but lint does not like it. Until lint is removed
  * we need to have private definitions here.
  */
-#define	ACPI_PRINTF_LIKE(c)	__PRINTFLIKE(c)
-#define	ACPI_UNUSED_VAR		__unused
 #define	ACPI_USE_NATIVE_DIVIDE
+#ifdef _KERNEL
 #define	ACPI_FLUSH_CPU_CACHE()	(__acpi_wbinvd())
+#else
+#define	ACPI_FLUSH_CPU_CACHE()
+#endif
 
+#ifdef _KERNEL
 #define	ACPI_DISASSEMBLER
+#define	_STRICT_SYMBOLS
+#endif /* _KERNEL */
 #define	ACPI_PACKED_POINTERS_NOT_SUPPORTED
 
 /*
@@ -101,17 +106,19 @@ uint32_t acpi_strtoul(const char *, char **, int);
  * being loaded as part of accommon.h.
  */
 #define	ACPI_USE_SYSTEM_CLIBRARY
-#endif
+#endif /* _KERNEL */
 
 #define	ACPI_ASM_MACROS
 #define	BREAKPOINT3
 #define	ACPI_DISABLE_IRQS()	cli()
 #define	ACPI_ENABLE_IRQS()	sti()
+#ifdef _KERNEL
 #define	ACPI_ACQUIRE_GLOBAL_LOCK(Facs, Acq)	\
 	((Acq) = __acpi_acquire_global_lock(Facs))
 
 #define	ACPI_RELEASE_GLOBAL_LOCK(Facs, Acq)	\
 	((Acq) = __acpi_release_global_lock(Facs))
+#endif /* _KERNEL */
 
 #ifdef __cplusplus
 }

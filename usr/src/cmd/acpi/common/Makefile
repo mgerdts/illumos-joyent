@@ -8,20 +8,23 @@
 # source.  A copy of the CDDL is also available via the Internet at
 # http://www.illumos.org/license/CDDL.
 #
-# Copyright 2016 Joyent, Inc.
+# Copyright 2017 Joyent, Inc.
 #
 
 LIBRARY =	acpi.a
 
 include	$(SRC)/lib/Makefile.lib
 
-OBJECTS= getopt.o osl.o utascii.o utdebug.o utexcep.o utglobal.o  utmath.o \
-	utnonansi.o utprint.o utxferror.o
+OBJECTS= getopt.o osl.o utascii.o utdebug.o utexcep.o utglobal.o uthex.o \
+	utmath.o utnonansi.o utprint.o utstrtoul64.o utstrsuppt.o utxferror.o
 SRCS = $(OBJECTS:.o=.c)
+
+VPATH = $(SRC)/common/acpica/utilities
 
 CERRWARN += -_gcc=-Wno-unused-function
 
-CPPFLAGS += -I$(SRC)/uts/intel/sys/acpi -DACPI_APPLICATION
+CPPFLAGS += -I$(SRC)/uts/intel/sys/acpi -DACPI_APPLICATION \
+	-DACPI_USE_STANDARD_HEADERS -DACPI_USE_SYSTEM_CLIBRARY
 
 LDLIBS += -lc
 

@@ -1,0 +1,72 @@
+#!/bin/bash -e
+
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Copyright 2017 Joyent, Inc.
+#
+
+#
+# This script is used to resync source from Intel's ACPICA distribution, or
+# perhaps a fork of it.  See Readme for details.
+#
+
+if [[ -z $1 ]]; then
+	echo "Usage: $0 intel-acpica-dir" 1>&2
+	exit 1
+fi
+
+upstream=$1
+illumos=$(git rev-parse --show-toplevel)
+uts=$illumos/usr/src/uts
+uts_intel_acpica=$uts/intel/io/acpica
+
+x=cp
+#x="echo diff"
+
+$x $upstream/documents/changes.txt $uts_intel_acpica/changes.txt
+$x $upstream/source/common/ahids.c $uts_intel_acpica/ahids.c
+
+for component in events hardware resources; do
+	for f in $upstream/source/components/$component/* ; do
+		$x $f $uts_intel_acpica/$component/$(basename $f)
+	done
+done
+
+for component in disassembler dispatcher executer namespace parser tables \
+    utilities; do
+	for f in $upstream/source/components/$component/* ; do
+		$x $f $illumos/usr/src/common/acpica/$component/$(basename $f)
+	done
+done
+
+for f in $upstream/source/include/*.h; do
+	$x $f $uts/intel/sys/acpi/$(basename $f)
+done
+
+for f in $upstream/source/include/platform/*; do
+	$x $f $uts/intel/sys/acpi/platform/$(basename $f)
+done
+
+for cmd in acpidump acpixtract; do
+	for f in $upstream/source/tools/$cmd/* ; do
+		$x $f $illumos/usr/src/cmd/acpi/$cmd/$(basename $f)
+	done
+done
+
+for f in $upstream/source/common/* ; do
+	$x $f $illumos/usr/src/cmd/acpi/common/$(basename $f)
+done
+
+# iasl
+$x $upstream/source/components/debugger/dbfileio.c \
+    $illumos/usr/src/cmd/acpi/iasl/dbfileio.c
+$x $upstream/source/os_specific/service_layers/osunixxf.c \
+    $illumos/usr/src/cmd/acpi/iasl/osunixxf.c
+for f in $upstream/source/compiler/*; do
+	$x $f $illumos/usr/src/cmd/acpi/iasl/$(basename $f)
+done
+
+exit 0
