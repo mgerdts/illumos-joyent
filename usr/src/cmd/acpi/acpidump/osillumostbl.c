@@ -43,7 +43,7 @@
  */
 
 /*
- * Copyright 2016 Joyent, Inc.
+ * Copyright 2017 Joyent, Inc.
  */
 
 #include <stdarg.h>
@@ -1025,21 +1025,6 @@ void
 AcpiOsFree(void *p)
 {
 	free(p);
-}
-
-ACPI_FILE
-AcpiOsOpenFile(const char *Path, UINT8 Modes)
-{
-	char mode[3];
-
-	bzero(mode, sizeof (mode));
-	if ((Modes & ACPI_FILE_READING) != 0)
-		(void) strlcat(mode, "r", sizeof (mode));
-
-	if ((Modes & ACPI_FILE_WRITING) != 0)
-		(void) strlcat(mode, "w", sizeof (mode));
-
-	return (fopen(Path, mode));
 }
 
 void

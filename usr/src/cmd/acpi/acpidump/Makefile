@@ -8,7 +8,7 @@
 # source.  A copy of the CDDL is also available via the Internet at
 # http://www.illumos.org/license/CDDL.
 #
-# Copyright 2016 Joyent, Inc.
+# Copyright 2017 Joyent, Inc.
 # Copyright 2016 RackTop Systems.
 #
 
@@ -21,9 +21,12 @@ OBJS= apmain.o apdump.o apfiles.o tbprint.o tbxfroot.o osillumostbl.o \
 	utbuffer.o osunixdir.o
 SRCS = $(OBJS:.o=.c)
 
+VPATH = $(SRC)/common/acpica/utilities:$(SRC)/common/acpica/tables
+
 CERRWARN += -_gcc=-Wno-unused-function
 
-CPPFLAGS += -I$(SRC)/uts/intel/sys/acpi -DACPI_DUMP_APP
+CPPFLAGS += -I$(SRC)/uts/intel/sys/acpi -DACPI_DUMP_APP \
+	-DACPI_USE_STANDARD_HEADERS -DACPI_USE_SYSTEM_CLIBRARY
 
 LDLIBS += -ldevinfo
 
@@ -38,7 +41,7 @@ $(PROG): $(OBJS)
 install: all $(ROOTUSRSBINPROG)
 
 clean:
-	$(RM) $(OBJS)
+	$(RM) $(OBJS) $(PROG)
 
 lint:	lint_SRCS
 
