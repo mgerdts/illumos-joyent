@@ -26,8 +26,8 @@ The expected workflow for updating is
 3. Build and test the modified acpica disto as described in the documentation
    in that workspace.
 
-4. Run acpica-update from within an illumos-joyent workspace.  That is:
+4. Run acpica-update from within an illumos workspace.  That is:
 
      ./acpica-update ~/acpica
 
-5. Build, test, code review, etc. the SmartOS bits.
+5. Build, test, code review, etc.
