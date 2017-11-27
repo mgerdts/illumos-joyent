@@ -112,17 +112,7 @@ $(LEX_C_FILES) := LEXFILE = $(LY_BASE).l
 $(LEX_C_FILES) := LEXFILE = $(LY_BASE).l
 $(YACC_FILES) := YTABC = $(LY_BASE)parse.c
 
-#
-# The system's m4 is not up to this task, as it lacks the -P option.  This seems
-# easy enough to work around with a bit of sed 's/m4_//'.  That just brings up
-# the next problem with m4 being unable to handle a macro body that is larger
-# than 4096 bytes.
-#
-GM4 = /opt/local/bin/gm4
 GM4FLAGS = -P
-
-BISON = /opt/local/bin/bison
-FLEX = /opt/local/bin/flex
 
 .KEEP_STATE:
 
