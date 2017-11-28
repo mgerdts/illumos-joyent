@@ -561,10 +561,8 @@ mod_installdrv(struct modldrv *modl, struct modlinkage *modlp)
 
 	/* Sanity check modname */
 	if ((major = ddi_name_to_major(modname)) == DDI_MAJOR_T_NONE) {
-#ifdef DEBUG
 		cmn_err(CE_WARN,
 		    "mod_installdrv: no major number for %s", modname);
-#endif
 		err = ENXIO;
 		goto done;
 	}
