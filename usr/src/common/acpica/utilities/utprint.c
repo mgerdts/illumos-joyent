@@ -149,6 +149,10 @@
  *
  *****************************************************************************/
 
+/*
+ * Copyright 2017 Joyent, Inc.
+ */
+
 #include "acpi.h"
 #include "accommon.h"
 
@@ -522,6 +526,7 @@ AcpiUtFormatNumber (
 }
 
 
+#ifndef ACPI_USE_SYSTEM_CLIBRARY
 /*******************************************************************************
  *
  * FUNCTION:    vsnprintf
@@ -1010,4 +1015,5 @@ fprintf (
 
     return (Length);
 }
-#endif
+#endif /* ACPI_APPLICATION */
+#endif /* ACPI_USE_SYSTEM_CLIBRARY */
