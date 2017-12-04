@@ -199,8 +199,6 @@ AcpiEvaluateObjectTyped (
 {
     ACPI_STATUS             Status;
     BOOLEAN                 FreeBufferOnError = FALSE;
-    ACPI_HANDLE             TargetHandle;
-    char                    *FullPathname;
 
 
     ACPI_FUNCTION_TRACE (AcpiEvaluateObjectTyped);
@@ -218,56 +216,41 @@ AcpiEvaluateObjectTyped (
         FreeBufferOnError = TRUE;
     }
 
-    Status = AcpiGetHandle (Handle, Pathname, &TargetHandle);
+    /* Evaluate the object */
+
+    Status = AcpiEvaluateObject (Handle, Pathname,
+        ExternalParams, ReturnBuffer);
     if (ACPI_FAILURE (Status))
     {
         return_ACPI_STATUS (Status);
     }
 
-    FullPathname = AcpiNsGetExternalPathname (TargetHandle);
-    if (!FullPathname)
-    {
-        return_ACPI_STATUS (AE_NO_MEMORY);
-    }
-
-    /* Evaluate the object */
-
-    Status = AcpiEvaluateObject (TargetHandle, NULL, ExternalParams,
-        ReturnBuffer);
-    if (ACPI_FAILURE (Status))
-    {
-        goto Exit;
-    }
-
-    /* Type ANY means "don't care about return value type" */
+    /* Type ANY means "don't care" */
 
     if (ReturnType == ACPI_TYPE_ANY)
     {
-        goto Exit;
+        return_ACPI_STATUS (AE_OK);
     }
 
     if (ReturnBuffer->Length == 0)
     {
         /* Error because caller specifically asked for a return value */
 
-        ACPI_ERROR ((AE_INFO, "%s did not return any object",
-            FullPathname));
-        Status = AE_NULL_OBJECT;
-        goto Exit;
+        ACPI_ERROR ((AE_INFO, "No return value"));
+        return_ACPI_STATUS (AE_NULL_OBJECT);
     }
 
     /* Examine the object type returned from EvaluateObject */
 
     if (((ACPI_OBJECT *) ReturnBuffer->Pointer)->Type == ReturnType)
     {
-        goto Exit;
+        return_ACPI_STATUS (AE_OK);
     }
 
     /* Return object type does not match requested type */
 
     ACPI_ERROR ((AE_INFO,
-        "Incorrect return type from %s - received [%s], requested [%s]",
-        FullPathname,
+        "Incorrect return type [%s] requested [%s]",
         AcpiUtGetTypeName (((ACPI_OBJECT *) ReturnBuffer->Pointer)->Type),
         AcpiUtGetTypeName (ReturnType)));
 
@@ -285,11 +268,7 @@ AcpiEvaluateObjectTyped (
     }
 
     ReturnBuffer->Length = 0;
-    Status = AE_TYPE;
-
-Exit:
-    ACPI_FREE (FullPathname);
-    return_ACPI_STATUS (Status);
+    return_ACPI_STATUS (AE_TYPE);
 }
 
 ACPI_EXPORT_SYMBOL (AcpiEvaluateObjectTyped)
