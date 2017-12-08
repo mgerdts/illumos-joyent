@@ -1130,7 +1130,8 @@ vm_fault(vm_map_t map, vm_offset_t off, vm_prot_t type, int flag)
 	prot = vmsm->vmsm_prot;
 
 	/* XXXJOY: punt on large pages for now */
-	pfn = vmo->vmo_pager(vmo, VMSM_OFFSET(vmsm, addr), NULL, NULL);
+	pfn = vmo->vmo_pager(vmo, ALIGN2PAGE(VMSM_OFFSET(vmsm, addr)), NULL,
+	    NULL);
 	map_lvl = 0;
 	map_addr = P2ALIGN((uintptr_t)addr, LEVEL_SIZE(map_lvl));
 	VERIFY(pfn != PFN_INVALID);
