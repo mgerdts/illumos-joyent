@@ -1857,6 +1857,7 @@ htable_va2entry(uintptr_t va, htable_t *ht)
 	level_t	l = ht->ht_level;
 
 	ASSERT(va >= ht->ht_vaddr);
+	ASSERT(IS_PAGEALIGNED(va));
 	ASSERT(va <= HTABLE_LAST_PAGE(ht));
 	return ((va >> LEVEL_SHIFT(l)) & (HTABLE_NUM_PTES(ht) - 1));
 }
