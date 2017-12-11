@@ -114,6 +114,8 @@ $(YACC_FILES) := YTABC = $(LY_BASE)parse.c
 
 GM4FLAGS = -P
 
+LFLAGS = -i -s
+
 .KEEP_STATE:
 
 all: $(YACC_FILES) .WAIT $(PROG)
