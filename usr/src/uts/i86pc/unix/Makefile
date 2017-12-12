@@ -170,6 +170,9 @@ CERRWARN	+= -_gcc=-Wno-unused-value
 #
 LINTFLAGS	+= -D_MACHDEP -I../../i86pc
 
+# Do not turn function declarations into inline functions with empty bodies.
+lint := CPPFLAGS += ACPI_DEBUG_OUTPUT
+
 #
 #	Default build targets.
 #
