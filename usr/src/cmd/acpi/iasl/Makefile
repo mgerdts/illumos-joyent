@@ -109,7 +109,6 @@ prparserlex.c prparserparse.c prparser.y.h := PARSER = PrParser
 prparserlex.c prparserparse.c prparser.y.h := LY_BASE = prparser
 
 $(LEX_C_FILES) := LEXFILE = $(LY_BASE).l
-$(LEX_C_FILES) := LEXFILE = $(LY_BASE).l
 $(YACC_FILES) := YTABC = $(LY_BASE)parse.c
 
 GM4FLAGS = -P
