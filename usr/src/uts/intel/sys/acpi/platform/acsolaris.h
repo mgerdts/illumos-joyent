@@ -120,6 +120,11 @@ uint32_t acpi_strtoul(const char *, char **, int);
 	((Acq) = __acpi_release_global_lock(Facs))
 #endif /* _KERNEL */
 
+/* Some non-debug inlined functions are no-ops that do not use arguments.  */
+#ifdef lint
+#define ACPI_DEBUG_OUTPUT
+#endif
+
 #ifdef __cplusplus
 }
 #endif
