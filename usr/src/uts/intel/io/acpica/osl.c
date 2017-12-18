@@ -318,7 +318,7 @@ AcpiOsPhysicalTableOverride(ACPI_TABLE_HEADER *ExistingTable,
 ACPI_STATUS
 AcpiOsEnterSleep(UINT8 SleepState, UINT32 RegaValue, UINT32 RegbValue)
 {
-	return (AE_SUPPORT);
+	return (AE_OK);
 }
 
 /*
