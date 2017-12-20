@@ -234,6 +234,8 @@ rxfifo_reset(struct uart_softc *sc, int size)
 	int error;
 #endif
  
+	assert(size >= 0);
+	assert(size <= FIFOSZ);
 	fifo = &sc->rxfifo;
 	bzero(fifo, sizeof(struct fifo));
 	fifo->size = size;
@@ -265,6 +267,8 @@ rxfifo_available(struct uart_softc *sc)
 	struct fifo *fifo;
 
 	fifo = &sc->rxfifo;
+	assert(fifo->size >= 0);
+	assert(fifo->size <= FIFOSZ);
 	return (fifo->num < fifo->size);
 }
 
