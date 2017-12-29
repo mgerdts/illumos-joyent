@@ -1184,6 +1184,23 @@ vmmdev_mod_decr(void)
 	}
 }
 
+static vmm_softc_t *
+vmm_lookup(const char *name)
+{
+	list_t *vml = &vmmdev_list;
+	vmm_softc_t *sc;
+
+	ASSERT(MUTEX_HELD(&vmmdev_mtx));
+
+	for (sc = list_head(vml); sc != NULL; sc = list_next(vml, sc)) {
+		if (strcmp(sc->vmm_name, name) == 0) {
+			break;
+		}
+	}
+
+	return (sc);
+}
+
 static int
 vmmdev_do_vm_create(dev_info_t *dip, char *name)
 {
@@ -1191,7 +1208,7 @@ vmmdev_do_vm_create(dev_info_t *dip, char *name)
 	minor_t		minor;
 	int		error = ENOMEM;
 
-	if (strlen(name) >= VM_MAX_NAMELEN) {
+	if (strnlen(name, VM_MAX_NAMELEN) >= VM_MAX_NAMELEN) {
 		return (EINVAL);
 	}
 
@@ -1202,12 +1219,10 @@ vmmdev_do_vm_create(dev_info_t *dip, char *name)
 	}
 
 	/* Look for duplicates names */
-	for (sc = list_head(&vmmdev_list); sc != NULL;
-	    sc = list_next(&vmmdev_list, sc)) {
-		if (strncmp(name, sc->vmm_name, sizeof (sc->vmm_name)) == 0) {
-			mutex_exit(&vmmdev_mtx);
-			return (EEXIST);
-		}
+	if (vmm_lookup(name) != NULL) {
+		vmmdev_mod_decr();
+		mutex_exit(&vmmdev_mtx);
+		return (EEXIST);
 	}
 
 	minor = id_alloc(vmmdev_minors);
@@ -1224,7 +1239,7 @@ vmmdev_do_vm_create(dev_info_t *dip, char *name)
 	error = vm_create(name, &sc->vmm_vm);
 	if (error == 0) {
 		/* Complete VM intialization and report success. */
-		strcpy(sc->vmm_name, name);
+		(void) strlcpy(sc->vmm_name, name, sizeof (sc->vmm_name));
 		sc->vmm_minor = minor;
 		list_create(&sc->vmm_devmem_list, sizeof (vmm_devmem_entry_t),
 		    offsetof(vmm_devmem_entry_t, vde_node));
@@ -1245,23 +1260,6 @@ fail:
 	}
 	mutex_exit(&vmmdev_mtx);
 	return (error);
-}
-
-static vmm_softc_t *
-vmm_lookup(const char *name)
-{
-	list_t *vml = &vmmdev_list;
-	vmm_softc_t *sc;
-
-	ASSERT(MUTEX_HELD(&vmmdev_mtx));
-
-	for (sc = list_head(vml); sc != NULL; sc = list_next(vml, sc)) {
-		if (strncmp(sc->vmm_name, name, sizeof (sc->vmm_name)) == 0) {
-			break;
-		}
-	}
-
-	return (sc);
 }
 
 int
