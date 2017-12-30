@@ -5418,8 +5418,9 @@ vnd_sdev_fillzone(vnd_pnsd_t *nsp, sdev_ctx_t ctx)
 		mutex_enter(&vdp->vdd_lock);
 		if ((vdp->vdd_flags & VND_D_LINKED) &&
 		    !(vdp->vdd_flags & (VND_D_CONDEMNED | VND_D_ZONE_DYING))) {
-			ret = sdev_plugin_mknod(ctx, vdp->vdd_lname, S_IFCHR,
-			    vdp->vdd_devid);
+			/* XXX-mg 0666 added for compatibility.  Dubious. */
+			ret = sdev_plugin_mknod(ctx, vdp->vdd_lname,
+			    S_IFCHR | 0666, vdp->vdd_devid);
 			if (ret != 0 && ret != EEXIST) {
 				mutex_exit(&vdp->vdd_lock);
 				mutex_exit(&nsp->vpnd_lock);
@@ -5463,7 +5464,8 @@ vnd_sdev_filldir_root(sdev_ctx_t ctx)
 	 * Always add a reference to the control node. There's no need to
 	 * reference it since it always exists and is always what we clone from.
 	 */
-	ret = sdev_plugin_mknod(ctx, "ctl", S_IFCHR,
+	/* XXX-mg 0666 added for compatibility.  Dubious. */
+	ret = sdev_plugin_mknod(ctx, "ctl", S_IFCHR | 0666,
 	    makedevice(ddi_driver_major(vnd_dip), 0));
 	if (ret != 0 && ret != EEXIST)
 		return (ret);

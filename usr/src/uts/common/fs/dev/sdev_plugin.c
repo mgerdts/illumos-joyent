@@ -272,24 +272,29 @@ sdev_plugin_mknod(sdev_ctx_t ctx, char *name, mode_t mode, dev_t dev)
 	sdev_node_t *sdvp;
 	timestruc_t now;
 	struct vattr vap;
+	mode_t devmode = mode & (S_IFCHR | S_IFBLK);
 
 	if (sdev_plugin_name_isvalid(name, SDEV_PLUGIN_NAMELEN) == 0)
 		return (EINVAL);
 
 	sdvp = (sdev_node_t *)ctx;
 	ASSERT(RW_WRITE_HELD(&sdvp->sdev_contents));
-	if (mode != S_IFCHR && mode != S_IFBLK)
+	if (devmode != S_IFCHR && devmode != S_IFBLK)
 		return (EINVAL);
+
+	/* Default to relatively safe permission bits if none specified. */
+	if ((mode & 0666) == 0)
+		mode = devmode | 0600;
 
 	ASSERT(sdvp->sdev_private != NULL);
 
-	vap = *sdev_getdefault_attr(mode == S_IFCHR ? VCHR : VBLK);
+	vap = *sdev_getdefault_attr(devmode == S_IFCHR ? VCHR : VBLK);
 	gethrestime(&now);
 	vap.va_atime = now;
 	vap.va_mtime = now;
 	vap.va_ctime = now;
 	vap.va_rdev = dev;
-	vap.va_mode = mode | 0666;
+	vap.va_mode = mode;
 
 	/* Despite the similar name, this is in fact a different function */
 	return (sdev_plugin_mknode(sdvp->sdev_private, sdvp, name, &vap));
