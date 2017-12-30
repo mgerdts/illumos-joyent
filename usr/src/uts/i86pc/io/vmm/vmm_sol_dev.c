@@ -21,6 +21,7 @@
 #include <sys/pc_hvm.h>
 #include <sys/cpuset.h>
 #include <sys/id_space.h>
+#include <sys/fs/sdev_plugin.h>
 
 #include <sys/vmm.h>
 #include <sys/vmm_instruction_emul.h>
@@ -49,6 +50,12 @@ static uint_t		vmmdev_inst_count = 0;
 static boolean_t	vmmdev_load_failure;
 
 static const char *vmmdev_hvm_name = "bhyve";
+
+/*
+ * For sdev plugin (/dev)
+ */
+#define	VMM_SDEV_ROOT "/dev/vmm"
+static sdev_plugin_hdl_t vmm_sdev_hdl;
 
 /*
  * vmm trace ring
@@ -1658,6 +1665,89 @@ out:
 	return (err);
 }
 
+static sdev_plugin_validate_t
+vmm_sdev_validate(sdev_ctx_t ctx)
+{
+	const char *name;
+	vmm_softc_t *sc;
+	sdev_plugin_validate_t ret;
+	minor_t minor;
+
+	if (sdev_ctx_vtype(ctx) != VCHR)
+		return (SDEV_VTOR_INVALID);
+
+	VERIFY3S(sdev_ctx_minor(ctx, &minor), ==, 0);
+
+	name = sdev_ctx_name(ctx);
+	if (strcmp(name, VMM_CTL_MINOR_NODE) == 0) {
+		ASSERT3U(minor, ==, VMM_CTL_MINOR);
+		return (SDEV_VTOR_VALID);
+	}
+
+	mutex_enter(&vmmdev_mtx);
+	if ((sc = vmm_lookup(name)) == NULL)
+		ret = SDEV_VTOR_INVALID;
+	else if (sc->vmm_minor != minor)
+		ret = SDEV_VTOR_STALE;
+	else
+		ret = SDEV_VTOR_VALID;
+	mutex_exit(&vmmdev_mtx);
+
+	return (ret);
+}
+
+static int
+vmm_sdev_filldir(sdev_ctx_t ctx)
+{
+	vmm_softc_t *sc;
+	int ret;
+
+	if (strcmp(sdev_ctx_path(ctx), VMM_SDEV_ROOT) != 0) {
+		cmn_err(CE_WARN, "%s: bad path '%s' != '%s'\n", __func__,
+		    sdev_ctx_path(ctx), VMM_SDEV_ROOT);
+		return (EINVAL);
+	}
+
+	/* Driver not initialized, directory empty. */
+	if (vmm_dip == NULL)
+		return (0);
+
+	mutex_enter(&vmmdev_mtx);
+
+	ret = sdev_plugin_mknod(ctx, VMM_CTL_MINOR_NODE, S_IFCHR | 0600,
+	    makedevice(ddi_driver_major(vmm_dip), VMM_CTL_MINOR));
+	if (ret != 0 && ret != EEXIST)
+		goto out;
+
+	for (sc = list_head(&vmmdev_list); sc != NULL;
+	    sc = list_next(&vmmdev_list, sc)) {
+		ret = sdev_plugin_mknod(ctx, sc->vmm_name, S_IFCHR | 0600,
+		    makedevice(ddi_driver_major(vmm_dip), sc->vmm_minor));
+		if (ret != 0 && ret != EEXIST)
+			goto out;
+	}
+
+	ret = 0;
+
+out:
+	mutex_exit(&vmmdev_mtx);
+	return (ret);
+}
+
+/* ARGSUSED */
+static void
+vmm_sdev_inactive(sdev_ctx_t ctx)
+{
+}
+
+static sdev_plugin_ops_t vmm_sdev_ops = {
+	.spo_version = SDEV_PLUGIN_VERSION,
+	.spo_flags = SDEV_PLUGIN_SUBDIR,
+	.spo_validate = vmm_sdev_validate,
+	.spo_filldir = vmm_sdev_filldir,
+	.spo_inactive = vmm_sdev_inactive
+};
+
 static int
 vmm_attach(dev_info_t *dip, ddi_attach_cmd_t cmd)
 {
@@ -1669,8 +1759,6 @@ vmm_attach(dev_info_t *dip, ddi_attach_cmd_t cmd)
 	}
 
 	vmm_sol_glue_init();
-	vmmdev_load_failure = B_FALSE;
-	vmm_dip = dip;
 
 	/*
 	 * Create control node.  Other nodes will be created on demand.
@@ -1680,10 +1768,20 @@ vmm_attach(dev_info_t *dip, ddi_attach_cmd_t cmd)
 		return (DDI_FAILURE);
 	}
 
+	if ((vmm_sdev_hdl = sdev_plugin_register("vmm", &vmm_sdev_ops,
+	    NULL)) == NULL) {
+		ddi_remove_minor_node(dip, NULL);
+		dip = NULL;
+		return (DDI_FAILURE);
+	}
+
 	ddi_report_dev(dip);
 
 	/* XXX: This needs updating */
 	vmm_arena_init();
+
+	vmmdev_load_failure = B_FALSE;
+	vmm_dip = dip;
 
 	return (DDI_SUCCESS);
 }
@@ -1700,6 +1798,7 @@ vmm_detach(dev_info_t *dip, ddi_detach_cmd_t cmd)
 
 	/* Ensure that all resources have been cleaned up */
 	mutex_enter(&vmmdev_mtx);
+
 	if (!list_is_empty(&vmmdev_list) || vmmdev_inst_count != 0) {
 		mutex_exit(&vmmdev_mtx);
 		return (DDI_FAILURE);
@@ -1710,6 +1809,12 @@ vmm_detach(dev_info_t *dip, ddi_detach_cmd_t cmd)
 		mutex_exit(&vmmdev_mtx);
 		return (DDI_FAILURE);
 	}
+
+	if (vmm_sdev_hdl != NULL && sdev_plugin_unregister(vmm_sdev_hdl) != 0) {
+		mutex_exit(&vmmdev_mtx);
+		return (DDI_FAILURE);
+	}
+	vmm_sdev_hdl = NULL;
 
 	/* Remove the control node. */
 	ddi_remove_minor_node(dip, VMM_CTL_MINOR_NODE);
