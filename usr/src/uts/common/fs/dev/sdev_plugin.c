@@ -145,6 +145,21 @@ sdev_ctx_name(sdev_ctx_t ctx)
 	return (sdp->sdev_name);
 }
 
+int
+sdev_ctx_minor(sdev_ctx_t ctx, minor_t *minorp)
+{
+	sdev_node_t *sdp = (sdev_node_t *)ctx;
+
+	ASSERT(RW_LOCK_HELD(&sdp->sdev_contents));
+	if (sdp->sdev_vnode->v_type == VCHR ||
+	    sdp->sdev_vnode->v_type == VBLK) {
+		*minorp = sdp->sdev_vnode->v_rdev;
+		return (0);
+	}
+
+	return (ENODEV);
+}
+
 /*
  * Currently we only support psasing through a single flag -- SDEV_IS_GLOBAL.
  */
@@ -159,7 +174,8 @@ sdev_ctx_flags(sdev_ctx_t ctx)
 
 /*
  * Return some amount of private data specific to the vtype. In the case of a
- * character or block device this is the device number.
+ * character or block device this is the device number.  So as to not confuse
+ * NULL and minor 0, a better interface for minor numbers is sdev_ctx_minor().
  */
 const void *
 sdev_ctx_vtype_data(sdev_ctx_t ctx)
