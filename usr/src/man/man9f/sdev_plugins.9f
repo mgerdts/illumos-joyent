@@ -1,0 +1,389 @@
+.\"
+.\" This Source Code Form is subject to the terms of the Mozilla Public
+.\" License, v. 2.0. If a copy of the MPL was not distributed with this
+.\" file, You can obtain one at http://mozilla.org/MPL/2.0/.
+.\"
+.\" Copyright (c) 2017, Joyent, Inc.
+.\"
+.Dd Dec 30, 2017
+.Dt SDEV_PLUGINS 9F
+.Os
+.Sh NAME
+.Nm sdev_plugins
+.Nd plugin interfaces for \fBdev\fR(7FS)
+.Sh SYNOPSIS
+.In sys/fs/sdev_plugin.h
+.Ft sdev_plugin_hdl_t
+.Fo sdev_plugin_register
+.Fa "const char *name"
+.Fa "sdev_plugin_ops_t *sdev_ops"
+.Fa "int *errp"
+.Fc
+.Ft "void"
+.Fo sdev_plugin_unregister
+.Fa "sdev_plugin_hdl_t sdev_hdl"
+.Fc
+.Ft "sdev_ctx_flags_t"
+.Fo sdev_ctx_flags
+.Fa "sdev_ctx_t sdev_ctx"
+.Fc
+.Ft "const char *"
+.Fo sdev_ctx_name
+.Fa "sdev_ctx_t sdev_ctx"
+.Fc
+.Ft "const char *"
+.Fo sdev_ctx_path
+.Fa "sdev_ctx_t sdev_ctx"
+.Fc
+.Ft "int"
+.Fo sdev_ctx_minor
+.Fa "sdev_ctx_t sdev_ctx"
+.Fa "minor_t *minorp"
+.Fc
+.Ft "vtype_t"
+.Fo sdev_ctx_vtype
+.Fa "sdev_ctx_t sdev_ctx"
+.Fc
+.Ft "void *"
+.Fo sdev_ctx_vtype_data
+.Fa "sdev_ctx_t sdev_ctx"
+.Fc
+.Ft "int"
+.Fo sdev_plugin_mkdir
+.Fa "sdev_ctx_t sdev_ctx"
+.Fa "const char *dirname"
+.Fc
+.Ft "int"
+.Fo sdev_plugin_mknod
+.Fa "sdev_ctx_t sdev_ctx"
+.Fa "const char *devname"
+.Fa "mode_t mode"
+.Fa "dev_t dev"
+.Fc
+.Sh INTERFACE LEVEL
+.Sy Evolving -
+This interface is still evolving in illumos.
+API and ABI stability is not guaranteed.
+.Sh PARAMETERS
+.Bl -tag -width Fa
+.It Fa sdev_hdl
+A
+.Vt sdev_plugin_hdl_t
+handle, as described in the
+.Sx Plugin Registration
+section.
+.It Fa sdev_ops
+Pointer to
+.Vt sdev_plugin_ops_t
+structure, as described in the
+.Sx Plugin Registration
+section.
+.It Fa sdev_ctx
+An opaque context passed to the plugin by \fBdev\fR(7FS) to the various
+callbacks.
+See the
+.Sx Context Helper Functions
+section for details.
+.El
+.Sh DESCRIPTION
+The
+.Nm
+interfaces described in this page are used to dynamically generate
+directories and device nodes within the
+.Pa /dev
+directory.
+They obviate the need for
+.Xr devfsadm 1M
+plugins for modules that use these interfaces.
+.Pp
+.Ss Plugin registration
+The
+.Fn sdev_plugin_register
+function is used to register initial path and the callbacks used by
+.Xr dev 7FS
+as
+.Pa /dev
+is traversed.  The
+.Vt sdev_plugin_ops_t
+type is defined as:
+.Pp
+.Li
+    typedef struct sdev_plugin_ops {
+            int spo_version;
+            sdev_plugin_flags_t spo_flags;
+            sp_valid_f spo_validate;
+            sp_filldir_f spo_filldir;
+            sp_inactive_f spo_inactive;
+    } sdev_plugin_ops_t;
+.No
+.Pp
+The value of
+.Va spo_version
+should be set to
+.Va SDEV_PLUGIN_VERSION
+and
+.Va spo_flags
+may include the following:
+.Bl -tag -width Va -offset indent
+.It Va SDEV_PLUGIN_NO_NCACHE
+XXX FIXME
+.It Va SDEV_PLUGIN_SUBDIR
+This plugin will create devices in a subdirectory of
+.Pa /dev
+with a name matching that of the
+.Va name
+argument.
+.El
+.Pp
+See the
+.Sx Callbacks
+section for details on the
+.Va spo_validate ,
+.Va spo_filldir ,
+and
+.Va spo_inactive
+callbacks.
+.Pp
+The structure referenced by the
+.Vt sdev_ops
+variable may be used by
+.Xr dev 7FS
+until
+.Fn sdev_plugin_unregister
+is called with the same
+.Vt sdev_plugin_hdl_t
+as was returned by the earlier call to the
+.Fn sdev_plugin_register
+function.
+.Pp
+.Ss Callbacks
+.Xr dev 7FS
+will call the callback functions defined in the
+.Vt sdev_plugin_ops_t
+as the system accesses relevant paths through the
+.Pa /dev
+directory.
+.Pp
+Callbacks make extensive use of
+.Sx Context Helper Functions .
+Additionally, they will call into
+.Xr dev 7FS
+to create subidrectories and device nodes with the following functions.
+.Pp
+.Ft "int"
+.Fo sdev_plugin_mkdir
+.Fa "sdev_ctx_t ctx"
+.Fa "const char *dirname"
+.Fc
+.Pp
+.Bd -offset indent
+Creates a subdirectory named
+.Fa dirname
+within the directory referenced by
+.Fa ctx .
+.Ed
+.Pp
+.Ft "int
+.Fo sdev_plugin_mknod
+.Fa "sdev_ctx_t ctx"
+.Fa "const char *nodename"
+.Fa "mode_t mode"
+.Fa "dev_t dev"
+.Fc
+.Pp
+.Bd -offset indent
+Creates a block or character device named
+.Fa nodename
+within the directory referenced by
+.Fa ctx .
+The
+.Fa mode
+argument must contain
+.Fa S_IFCHR
+or
+.Fa S_IFBLK .
+If no other read or write mode bits are set,
+.Fa S_IREAD|S_IWRITE
+(0600) is assumed.
+See
+.Xr stat.h 3HEAD .
+The
+.Fa dev
+argument is as returned by
+.Xr makedev 3C .
+.Ed
+.Pp
+The following callbacks must be implemented by every plugin.
+.Pp
+.Ft "sdev_plugin_validate_t"
+.Fo spo_validate
+.Fa "sdev_ctxt_t ctx"
+.Fc
+.Pp
+.Bd -offset indent
+The validate callback is called to verify that a particular device node or
+directory is still valid.
+The callback shall return one of the following
+values:
+.Bl -tag -width Fa
+.It SDEV_VTOR_INVALID
+The directory or device node is no longer valid and should be removed.
+.It SDEV_VTOR_SKIP
+XXX
+.It SDEV_VTOR_VALID
+The directory or device node is valid and should not be changed.
+.It SDEV_VTOR_STALE
+The directory or device node should be present, but it is stale and should be
+regenerated.  \fBXXX This triggers spo_filldir?\fR
+.El
+.Ed
+.Pp
+.Ft "int"
+.Fo spo_filldir
+.Fa "sdev_ctxt_t ctx"
+.Fc
+.Pp
+.Bd -offset indent
+The fill directory callback is called to generate or re-generate the contents of
+a directory.
+This callback will typically make one more calls to the
+.Fn spo_plugin_mkdir
+and/or
+.Fn spo_plugin_mknod
+functions to create directories and device nodes.
+This callback should be tolerant of being called on a directory that is already
+partially filled.  That is,
+.Fn spo_plugin_mkdir
+and
+.Fn spo_plugin_mknod
+may return
+.Va EEXIST
+which is likely not a fatal error.
+.Pp
+The callback shall return 0 on success or a valid
+.Vt errno
+value on falure.
+.Ed
+.Pp
+.Ft "void"
+.Fo spo_inactive
+.Fa "sdev_ctxt_t ctx"
+.Fc
+.Pp
+.Bd -offset indent
+The inactive callback is called when
+.Xr dev 7FS
+is removing an entry.
+This callback should be used by the module to reduce reference counts and/or any
+other house keeping that is required as device nodes are removed.
+.Ed
+.Pp
+If the device(s) are different between the global zone and non-global zones,
+callbacks should use
+.Fn sdev_ctx_flags
+to check for the
+.Fa SDEV_GLOBAL
+flag.
+.Pp
+If a module creates a directory hierarchy,
+.Fn sdev_ctx_path
+will be essential to ensuring that operations are being performed in the
+intended directory.
+.Pp
+.Ss Context Helper Functions
+Context helper functions are used within callbacks to gain access to various
+fields within
+.Vt sdev_ctxt_t
+structures.
+See the
+.Sx Callbacks
+section.
+.Pp
+The
+.Fn sdev_ctx_flags
+function may retrieve the flags for a particular directory or device node.
+The supported flags are:
+.Bl -tag -width Fa -offset indent
+.It Fa SDEV_GLOBAL
+This
+.Xr dev 7FS
+instance is in the global zone.
+.El
+.Pp
+The
+.Fn sdev_ctx_name
+function returns the last component of the path of the directory or device node.
+.Pp
+The
+.Fn sdev_ctx_path
+function returns the absolute path of the directory or device node.
+.Pp
+The
+.Fn sdev_ctx_minor
+function returns via the location referenced by
+.Fa minorp
+the minor node of the device node referenced by the
+.Fa sdev_ctx
+function argument.
+If
+.Fa sdev_ctx
+does not refer to a block or character device, an error is returned and the
+location referend by
+.Fa minorp
+is not changed.
+.Pp
+The
+.Fn sdev_ctx_vtype
+function returns the
+.Vt vnode
+type of the
+.Vt vnode
+corresponding to element referenced by the
+.Fa sdev_ctx
+function argument.
+The following values are expected:
+.Bl -tag -width Fa -offset indent
+.It Fa VDIR
+Directory
+.It Fa VBLK
+Block device
+.It Fa VCHR
+Character device
+.El
+.Pp
+The 
+.Fn dev_ctx_vtype_data 
+function is obsolete.
+Use
+.Fn dev_ctx_minor
+instead.
+.Sh CONTEXT
+These functions may be called only in
+.Sy kernel
+context.
+.Sh RETURN VALUES
+The
+.Fn sdev_plugin_register
+function returns a non-NULL value on success.
+On failure it returns
+.Sy NULL
+and if
+.Fa errp
+is non-NULL,
+.Fa errp
+is set to an appropriate
+.Fa errno
+value.
+If
+.Fa sdev_ops
+is not properly initialized, this value will be
+.Fa EINVAL .
+If the plugin is already registered or there is another name collision,
+.Fa EEXIST
+is returned via
+.Fa errp .
+.Sh SEE ALSO
+.Xr devfsadm 1M ,
+.Xr makedev 3C ,
+.Xr stat.h 3HEAD ,
+.Xr dev 7FS
