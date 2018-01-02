@@ -27,7 +27,7 @@ powered down (and generate a name for that device) by invoking
 .sp
 .LP
 Kernel module developers may use the interfaces described in
-\fBsdev_plugins\fR(9F) to dynamically create directories and device nodes in
+\fBsdev_plugin\fR(9F) to dynamically create directories and device nodes in
 \fB/dev\fR.
 .SH FILES
 .sp
@@ -42,7 +42,7 @@ Mount point for the \fB/dev\fR filesystem in the global zone.
 .SH SEE ALSO
 .sp
 .LP
-\fBdevfsadm\fR(1M), \fBformat\fR(1M), \fBdevfs\fR(7FS), \fBsdev_plugins\fR(9F)
+\fBdevfsadm\fR(1M), \fBformat\fR(1M), \fBdevfs\fR(7FS), \fBsdev_plugin\fR(9F)
 .SH NOTES
 .sp
 .LP

@@ -1220,6 +1220,17 @@ MANLINKS=	AVL_NEXT.9f					\
 		scsi_unslave.9f					\
 		scsi_wwn_to_wwnstr.9f				\
 		scsi_free_wwnstr.9f				\
+		sdev_ctx_flags.9f				\
+		sdev_ctx_name.9f				\
+		sdev_ctx_path.9f				\
+		sdev_ctx_minor.9f				\
+		sdev_ctx_mkdir.9f				\
+		sdev_ctx_mknode.9f				\
+		sdev_ctx_vtype.9f				\
+		sdev_ctx_vtype_data.9f				\
+		sdev_plugin_register.9f				\
+		sdev_plugin_unregister.9f			\
+		sdev_plugin.9f					\
 		sema_destroy.9f					\
 		sema_init.9f					\
 		sema_p.9f					\
@@ -2120,6 +2131,17 @@ scsi_unslave.9f				:= LINKSRC = scsi_unprobe.9f
 
 scsi_wwn_to_wwnstr.9f			:= LINKSRC = scsi_wwnstr_to_wwn.9f
 scsi_free_wwnstr.9f			:= LINKSRC = scsi_wwnstr_to_wwn.9f
+
+sdev_ctx_flags.9f			:= LINKSRC = sdev_plugin.9f
+sdev_ctx_name.9f			:= LINKSRC = sdev_plugin.9f
+sdev_ctx_path.9f			:= LINKSRC = sdev_plugin.9f
+sdev_ctx_minor.9f			:= LINKSRC = sdev_plugin.9f
+sdev_ctx_mkdir.9f			:= LINKSRC = sdev_plugin.9f
+sdev_ctx_mknode.9f			:= LINKSRC = sdev_plugin.9f
+sdev_ctx_vtype.9f			:= LINKSRC = sdev_plugin.9f
+sdev_ctx_vtype_data.9f			:= LINKSRC = sdev_plugin.9f
+sdev_plugin_register.9f			:= LINKSRC = sdev_plugin.9f
+sdev_plugin_unregister.9f		:= LINKSRC = sdev_plugin.9f
 
 sema_destroy.9f				:= LINKSRC = semaphore.9f
 sema_init.9f				:= LINKSRC = semaphore.9f

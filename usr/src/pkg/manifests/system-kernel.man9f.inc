@@ -14,6 +14,7 @@
 # Copyright 2014 Garrett D'Amore <garrett@damore.org>
 # Copyright 2016 Nexenta Systems, Inc.
 # Copyright 2016 Hans Rosenfeld <rosenfeld@grumpf.hope-2000.org>
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 file path=usr/share/man/man9f/ASSERT.9f
@@ -470,6 +471,17 @@ file path=usr/share/man/man9f/scsi_transport.9f
 file path=usr/share/man/man9f/scsi_unprobe.9f
 file path=usr/share/man/man9f/scsi_validate_sense.9f
 file path=usr/share/man/man9f/scsi_vu_errmsg.9f
+file path=usr/share/man/man9f/sdev_ctx_flags.9f
+file path=usr/share/man/man9f/sdev_ctx_minor.9f
+file path=usr/share/man/man9f/sdev_ctx_mkdir.9f
+file path=usr/share/man/man9f/sdev_ctx_mknode.9f
+file path=usr/share/man/man9f/sdev_ctx_name.9f
+file path=usr/share/man/man9f/sdev_ctx_path.9f
+file path=usr/share/man/man9f/sdev_ctx_vtype.9f
+file path=usr/share/man/man9f/sdev_ctx_vtype_data.9f
+file path=usr/share/man/man9f/sdev_plugin.9f
+file path=usr/share/man/man9f/sdev_plugin_register.9f
+file path=usr/share/man/man9f/sdev_plugin_unregister.9f
 file path=usr/share/man/man9f/semaphore.9f
 file path=usr/share/man/man9f/sprintf.9f
 file path=usr/share/man/man9f/stoi.9f
