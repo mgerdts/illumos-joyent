@@ -412,12 +412,6 @@ _init(void)
 		return (ret);
 	}
 
-	viona_sdev_hdl = sdev_plugin_register("viona", &viona_sdev_ops, &ret);
-	if (viona_sdev_hdl == NULL) {
-		(void) mod_remove(&modlinkage);
-		ddi_soft_state_fini(&viona_state);
-	}
-
 	return (ret);
 }
 
@@ -425,11 +419,6 @@ int
 _fini(void)
 {
 	int	ret;
-
-	ret = sdev_plugin_unregister(viona_sdev_hdl);
-	if (ret != 0)
-		return (ret);
-	viona_sdev_hdl = NULL;
 
 	ret = mod_remove(&modlinkage);
 	if (ret == 0) {
@@ -478,6 +467,15 @@ viona_attach(dev_info_t *dip, ddi_attach_cmd_t cmd)
 
 	viona_dip = dip;
 
+	viona_sdev_hdl = sdev_plugin_register("viona", &viona_sdev_ops, NULL);
+	if (viona_sdev_hdl == NULL) {
+		ddi_remove_minor_node(dip, VIONA_CTL_NODE_NAME);
+		kmem_cache_destroy(viona_desb_cache);
+		viona_desb_cache = NULL;
+		viona_dip = NULL;
+		return (DDI_FAILURE);
+	}
+
 	set_viona_tx_mode();
 	ddi_report_dev(viona_dip);
 
@@ -490,6 +488,13 @@ viona_detach(dev_info_t *dip, ddi_detach_cmd_t cmd)
 	if (cmd != DDI_DETACH) {
 		return (DDI_FAILURE);
 	}
+
+	if (sdev_plugin_unregister(viona_sdev_hdl) != 0) {
+		return (DDI_FAILURE);
+	}
+	viona_sdev_hdl = NULL;
+
+	kmem_cache_destroy(viona_desb_cache);
 
 	id_space_destroy(viona_minors);
 
