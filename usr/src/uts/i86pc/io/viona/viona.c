@@ -35,6 +35,7 @@
  */
 #include <sys/conf.h>
 #include <sys/file.h>
+#include <sys/fs/sdev_plugin.h>
 #include <sys/stat.h>
 #include <sys/ddi.h>
 #include <sys/disp.h>
@@ -64,8 +65,9 @@
 
 #define	VIONA_CTL_MINOR		0
 #define	VIONA_CTL_NODE_NAME	"ctl"
+#define VIONA_DEV_DIR		"/dev/viona"
 
-#define	VIONA_CLI_NAME		"viona"
+#define	VIONA_CLI_NAME		"viona"		/* MAC client name */
 
 #define	VTNET_MAXSEGS		32
 
@@ -259,6 +261,8 @@ typedef struct used_elem {
 static void			*viona_state;
 static dev_info_t		*viona_dip;
 static id_space_t		*viona_minors;
+static kmem_cache_t		*viona_desb_cache;
+static sdev_plugin_hdl_t	viona_sdev_hdl;
 
 /*
  * copy tx mbufs from virtio ring to avoid necessitating a wait for packet
@@ -346,19 +350,72 @@ static struct modlinkage modlinkage = {
 	MODREV_1, &modldrv, NULL
 };
 
+static sdev_plugin_validate_t
+viona_sdev_validate(sdev_ctx_t ctx)
+{
+	minor_t minor;
+
+	if (strcmp(sdev_ctx_name(ctx), VIONA_CTL_NODE_NAME) != 0)
+		return (SDEV_VTOR_INVALID);
+
+	VERIFY3S(sdev_ctx_minor(ctx, &minor), ==, 0);
+
+	if (minor != VIONA_CTL_MINOR)
+		return (SDEV_VTOR_STALE);
+
+	return (SDEV_VTOR_VALID);
+}
+
+static int
+viona_sdev_filldir(sdev_ctx_t ctx)
+{
+	int ret;
+
+	if (strcmp(sdev_ctx_path(ctx), VIONA_DEV_DIR) != 0)
+		return (EINVAL);
+
+	ret = sdev_plugin_mknod(ctx, VIONA_CTL_NODE_NAME, S_IFCHR,
+	    makedevice(ddi_driver_major(viona_dip), VIONA_CTL_MINOR));
+	if (ret == EEXIST)
+		ret = 0;
+
+	return (ret);
+}
+
+/* ARGSUSED */
+void
+viona_sdev_inactive(sdev_ctx_t ctx)
+{
+	/* Nothing to do */
+}
+
+static struct sdev_plugin_ops viona_sdev_ops = {
+	.spo_version = SDEV_PLUGIN_VERSION,
+	.spo_flags = SDEV_PLUGIN_SUBDIR,
+	.spo_validate = viona_sdev_validate,
+	.spo_filldir = viona_sdev_filldir,
+	.spo_inactive = viona_sdev_inactive
+};
+
 int
 _init(void)
 {
 	int	ret;
 
-	ret = ddi_soft_state_init(&viona_state,
-	    sizeof (viona_soft_state_t), 0);
-	if (ret == 0) {
-		ret = mod_install(&modlinkage);
-		if (ret != 0) {
-			ddi_soft_state_fini(&viona_state);
-			return (ret);
-		}
+	ret = ddi_soft_state_init(&viona_state, sizeof (viona_soft_state_t), 0);
+	if (ret != 0)
+		return (ret);
+
+	ret = mod_install(&modlinkage);
+	if (ret != 0) {
+		ddi_soft_state_fini(&viona_state);
+		return (ret);
+	}
+
+	viona_sdev_hdl = sdev_plugin_register("viona", &viona_sdev_ops, &ret);
+	if (viona_sdev_hdl == NULL) {
+		(void) mod_remove(&modlinkage);
+		ddi_soft_state_fini(&viona_state);
 	}
 
 	return (ret);
@@ -368,6 +425,11 @@ int
 _fini(void)
 {
 	int	ret;
+
+	ret = sdev_plugin_unregister(viona_sdev_hdl);
+	if (ret != 0)
+		return (ret);
+	viona_sdev_hdl = NULL;
 
 	ret = mod_remove(&modlinkage);
 	if (ret == 0) {

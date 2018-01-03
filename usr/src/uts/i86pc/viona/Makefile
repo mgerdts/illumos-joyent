@@ -47,7 +47,7 @@ ALL_BUILDS	= $(ALL_BUILDSONLY64)
 DEF_BUILDS	= $(DEF_BUILDSONLY64)
 
 CFLAGS		+= $(CCVERBOSE)
-LDFLAGS		+= -dy -Ndrv/dld -Nmisc/mac -Nmisc/dls -Ndrv/vmm
+LDFLAGS		+= -dy -Ndrv/dld -Nmisc/mac -Nmisc/dls -Ndrv/vmm -Nfs/dev
 
 #
 #	Default build targets.
