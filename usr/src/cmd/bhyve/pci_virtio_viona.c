@@ -263,7 +263,7 @@ pci_viona_viona_init(struct vmctx *ctx, struct pci_viona_softc *sc)
 	vioc_create_t		vna_create;
 	int			error;
 
-	sc->vsc_vnafd = open("/devices/pseudo/viona@0:ctl", O_RDWR | O_EXCL);
+	sc->vsc_vnafd = open("/dev/viona/ctl", O_RDWR | O_EXCL);
 	if (sc->vsc_vnafd == -1) {
 		WPRINTF(("open viona ctl failed\n"));
 		return (-1);
