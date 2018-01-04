@@ -7,6 +7,9 @@
 # Management Information without the express written permission from
 # Pluribus Networks Inc is prohibited, and any such unauthorized removal
 # or alteration will be a violation of federal law.
+#
+# Copyright (c) 2018, Joyent, Inc.
+#
 
 #
 # Path to the base of the uts directory tree (usually /usr/src/uts).
@@ -19,7 +22,7 @@ UTSBASE	= ../..
 MODULE		= viona
 OBJECTS	= $(VIONA_OBJS:%=$(OBJS_DIR)/%)
 LINTS		= $(VIONA_OBJS:%.o=$(LINTS_DIR)/%.ln)
-ROOTMODULE	= $(USR_DRV_DIR)/$(MODULE)
+ROOTMODULE	= $(ROOT_DRV_DIR)/$(MODULE)
 CONF_SRCDIR	= $(UTSBASE)/i86pc/io/viona
 
 #
