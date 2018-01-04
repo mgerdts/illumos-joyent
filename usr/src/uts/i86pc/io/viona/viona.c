@@ -32,6 +32,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ * Copyright (c) 2018, Joyent, Inc.
  */
 #include <sys/conf.h>
 #include <sys/file.h>
@@ -270,9 +272,8 @@ static sdev_plugin_hdl_t	viona_sdev_hdl;
  */
 static boolean_t		viona_force_copy_tx_mblks = B_FALSE;
 
-extern struct vm *vm_lookup_by_name(char *name);
-extern uint64_t vm_gpa2hpa(struct vm *vm, uint64_t gpa, size_t len);
-
+static int viona_info(dev_info_t *dip, ddi_info_cmd_t cmd, void *arg,
+    void **result);
 static int viona_attach(dev_info_t *dip, ddi_attach_cmd_t cmd);
 static int viona_detach(dev_info_t *dip, ddi_detach_cmd_t cmd);
 static int viona_open(dev_t *devp, int flag, int otype, cred_t *credp);
@@ -328,7 +329,7 @@ static struct cb_ops viona_cb_ops = {
 static struct dev_ops viona_ops = {
 	DEVO_REV,
 	0,
-	nodev,
+	viona_info,
 	nulldev,
 	nulldev,
 	viona_attach,
@@ -448,6 +449,28 @@ set_viona_tx_mode()
 		}
 	}
 	viona_force_copy_tx_mblks = B_FALSE;
+}
+
+/* ARGSUSED */
+static int
+viona_info(dev_info_t *dip, ddi_info_cmd_t cmd, void *arg, void **result)
+{
+	int error;
+
+	switch (cmd) {
+	case DDI_INFO_DEVT2DEVINFO:
+		*result = (void *)viona_dip;
+		error = DDI_SUCCESS;
+		break;
+	case DDI_INFO_DEVT2INSTANCE:
+		*result = (void *)0;
+		error = DDI_SUCCESS;
+		break;
+	default:
+		error = DDI_FAILURE;
+		break;
+	}
+	return (error);
 }
 
 static int

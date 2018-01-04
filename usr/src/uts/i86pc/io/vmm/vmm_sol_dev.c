@@ -7,6 +7,8 @@
  * Management Information without the express written permission from
  * Pluribus Networks Inc is prohibited, and any such unauthorized removal
  * or alteration will be a violation of federal law.
+ *
+ * Copyright (c) 2018, Joyent, Inc.
  */
 #include <sys/types.h>
 #include <sys/conf.h>
@@ -1748,6 +1750,28 @@ static sdev_plugin_ops_t vmm_sdev_ops = {
 	.spo_inactive = vmm_sdev_inactive
 };
 
+/* ARGSUSED */
+static int
+vmm_info(dev_info_t *dip, ddi_info_cmd_t cmd, void *arg, void **result)
+{
+	int error;
+
+	switch (cmd) {
+	case DDI_INFO_DEVT2DEVINFO:
+		*result = (void *)vmm_dip;
+		error = DDI_SUCCESS;
+		break;
+	case DDI_INFO_DEVT2INSTANCE:
+		*result = (void *)0;
+		error = DDI_SUCCESS;
+		break;
+	default:
+		error = DDI_FAILURE;
+		break;
+	}
+	return (error);
+}
+
 static int
 vmm_attach(dev_info_t *dip, ddi_attach_cmd_t cmd)
 {
@@ -1846,7 +1870,7 @@ static struct cb_ops vmm_cb_ops = {
 static struct dev_ops vmm_ops = {
 	DEVO_REV,
 	0,
-	ddi_no_info,
+	vmm_info,
 	nulldev,	/* identify */
 	nulldev,	/* probe */
 	vmm_attach,
