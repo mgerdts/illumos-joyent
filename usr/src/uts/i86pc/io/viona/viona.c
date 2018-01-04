@@ -537,9 +537,15 @@ viona_open(dev_t *devp, int flag, int otype, cred_t *credp)
 	if (otype != OTYP_CHR) {
 		return (EINVAL);
 	}
+#if 0
+	/*
+	 * XXX-mg: drv_priv() is wrong, but I'm not sure what is right.
+	 * Should the check be at open() or ioctl()?
+	 */
 	if (drv_priv(credp) != 0) {
 		return (EPERM);
 	}
+#endif
 	if (getminor(*devp) != VIONA_CTL_MINOR) {
 		return (ENXIO);
 	}
