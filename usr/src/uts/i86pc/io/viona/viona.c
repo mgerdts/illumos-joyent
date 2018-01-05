@@ -123,6 +123,10 @@
 	DTRACE_PROBE2(viona__##name, arg1, arg2, arg3, arg4)
 #define	VIONA_PROBE3(name, arg1, arg2, arg3, arg4, arg5, arg6)	\
 	DTRACE_PROBE3(viona__##name, arg1, arg2, arg3, arg4, arg5, arg6)
+#define	VIONA_PROBE5(name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, \
+	arg9, arg10) \
+	DTRACE_PROBE5(viona__##name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, \
+	arg8, arg9, arg10)
 #define	VIONA_PROBE_BAD_RING_ADDR(r, a)		\
 	VIONA_PROBE2(bad_ring_addr, viona_vring_t *, r, void *, (void *)(a))
 
@@ -1580,6 +1584,7 @@ viona_recv_merged(viona_vring_t *ring, mblk_t *mp, size_t msz)
 	n = vq_popchain(ring, iov, VTNET_MAXSEGS, &cookie);
 	if (n <= 0) {
 		/* Without available buffers, the frame must be dropped. */
+		VIONA_PROBE2(no_space, viona_vring_t *, ring, mblk_t *, mp);
 		return (ENOSPC);
 	}
 	if (iov[0].iov_len < hdr_sz) {
@@ -1669,6 +1674,9 @@ viona_recv_merged(viona_vring_t *ring, mblk_t *mp, size_t msz)
 	 */
 	if (copied < MIN_BUF_SIZE || copied != msz) {
 		/* Do not override an existing error */
+		VIONA_PROBE5(too__short, viona_vring_t *, ring,
+		    uint16_t, cookie, mblk_t *, mp, size_t, copied,
+		    size_t, msz);
 		err = (err == 0) ? EINVAL : err;
 	}
 
