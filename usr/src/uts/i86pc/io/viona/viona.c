@@ -581,9 +581,12 @@ viona_close(dev_t dev, int flag, int otype, cred_t *credp)
 		return (EINVAL);
 	}
 
+#if 0
+	/* XXX-mg */
 	if (drv_priv(credp) != 0) {
 		return (EPERM);
 	}
+#endif
 
 	minor = getminor(dev);
 
