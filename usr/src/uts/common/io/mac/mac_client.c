@@ -1330,6 +1330,12 @@ mac_client_open(mac_handle_t mh, mac_client_handle_t *mchp, char *name,
 		mcip = mac_vnic_lower(mip);
 
 		/*
+		 * XXX-mg this is probably wrong.  Without it, mac_tx() of bhyve
+		 * guest traffic is sent without a vlan tag.
+		 */
+		mcip->mci_state_flags &= ~MCIS_TAG_DISABLE;
+
+		/*
 		 * Note that multiple mac clients share the same mcip in
 		 * this case.
 		 */
