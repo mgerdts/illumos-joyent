@@ -21,7 +21,7 @@
 /*
  * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
- * Copyright (c) 2012, Joyent, Inc.  All rights reserved.
+ * Copyright (c) 2018, Joyent, Inc.  All rights reserved.
  */
 /*
  * Copyright 2015 Joyent, Inc.
@@ -57,10 +57,12 @@ typedef struct mac_unicast_impl_s {			/* Protected by */
 	uint16_t			mui_vid;	/* SL */
 } mac_unicast_impl_t;
 
-#define	MAC_CLIENT_FLAGS_PRIMARY		0X0001
-#define	MAC_CLIENT_FLAGS_VNIC_PRIMARY		0x0002
-#define	MAC_CLIENT_FLAGS_MULTI_PRIMARY		0x0004
-#define	MAC_CLIENT_FLAGS_PASSIVE_PRIMARY	0x0008
+typedef enum {
+	MAC_CLIENT_FLAGS_PRIMARY		= 0X0001,
+	MAC_CLIENT_FLAGS_VNIC_PRIMARY		= 0x0002,
+	MAC_CLIENT_FLAGS_MULTI_PRIMARY		= 0x0004,
+	MAC_CLIENT_FLAGS_PASSIVE_PRIMARY	= 0x0008
+} mci_client_flag_t;
 
 /* MCI state flags */
 typedef enum {
@@ -147,7 +149,7 @@ struct mac_client_impl_s {			/* Protected by */
 	mac_cb_t		*mci_promisc_list;	/* mi_promisc_lock */
 
 	mac_address_t		*mci_unicast;
-	uint32_t		mci_flags;		/* SL */
+	mci_client_flag_t	mci_flags;		/* SL */
 	krwlock_t		mci_rw_lock;
 	mac_unicast_impl_t	*mci_unicast_list;	/* mci_rw_lock */
 	/*
@@ -216,7 +218,7 @@ struct mac_client_impl_s {			/* Protected by */
 	/*
 	 * Protected by mci_tx_pcpu[0].pcpu_tx_lock
 	 */
-	uint_t			mci_tx_flag;
+	mci_tx_flag_t		mci_tx_flag;
 	kcondvar_t		mci_tx_cv;
 
 	/* Must be last in the structure for dynamic sizing */

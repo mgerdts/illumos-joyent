@@ -20,7 +20,7 @@
  */
 /*
  * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 #ifndef	_SYS_MAC_IMPL_H
@@ -90,9 +90,11 @@ typedef	struct mac_chain_s {
  * Please see the comments above mac_callback_add for more information.
  */
 /* mcb_flags */
-#define	MCB_CONDEMNED		0x1		/* Logically deleted */
-#define	MCB_NOTIFY_CB_T		0x2
-#define	MCB_TX_NOTIFY_CB_T	0x4
+typedef enum {
+	MCB_CONDEMNED		= 0x1,		/* Logically deleted */
+	MCB_NOTIFY_CB_T		= 0x2,
+	MCB_TX_NOTIFY_CB_T	= 0x4
+} mcb_flag_t;
 
 extern boolean_t	mac_tx_serialize;
 
@@ -100,7 +102,7 @@ typedef struct mac_cb_s {
 	struct mac_cb_s		*mcb_nextp;	/* Linked list of callbacks */
 	void			*mcb_objp;	/* Ptr to enclosing object  */
 	size_t			mcb_objsize;	/* Sizeof the enclosing obj */
-	uint_t			mcb_flags;
+	mcb_flag_t		mcb_flags;
 } mac_cb_t;
 
 typedef struct mac_cb_info_s {
@@ -196,9 +198,11 @@ typedef enum {
 } mac_ring_state_t;
 
 /* mr_flag values */
-#define	MR_INCIPIENT	0x1
-#define	MR_CONDEMNED	0x2
-#define	MR_QUIESCE	0x4
+typedef enum {
+	MR_INCIPIENT	= 0x1,
+	MR_CONDEMNED	= 0x2,
+	MR_QUIESCE	= 0x4
+} mr_flag_t;
 
 typedef struct mac_impl_s mac_impl_t;
 
@@ -221,7 +225,7 @@ struct mac_ring_s {
 	kmutex_t		mr_lock;
 	kcondvar_t		mr_cv;			/* mr_lock */
 	mac_ring_state_t	mr_state;		/* mr_lock */
-	uint_t			mr_flag;		/* mr_lock */
+	mr_flag_t		mr_flag;		/* mr_lock */
 
 	mac_ring_info_t		mr_info;	/* driver supplied info */
 };
@@ -345,7 +349,9 @@ struct mac_group_s {
 }
 
 /* mci_tx_flag */
-#define	MCI_TX_QUIESCE	0x1
+typedef enum {
+	MCI_TX_QUIESCE	= 0x1
+} mci_tx_flag_t;
 
 typedef struct mac_factory_addr_s {
 	boolean_t		mfa_in_use;
@@ -374,6 +380,20 @@ typedef struct mac_address_s {
 	mac_group_t		*ma_group;		/* asscociated group */
 	mac_impl_t		*ma_mip;		/* MAC handle */
 } mac_address_t;
+
+/* for mi_state_flags */
+typedef enum {
+	MIS_DISABLED		= 0x0001,
+	MIS_IS_VNIC		= 0x0002,
+	MIS_IS_AGGR		= 0x0004,
+	MIS_NOTIFY_DONE		= 0x0008,
+	MIS_EXCLUSIVE		= 0x0010,
+	MIS_EXCLUSIVE_HELD	= 0x0020,
+	MIS_LEGACY		= 0x0040,
+	MIS_NO_ACTIVE		= 0x0080,
+	MIS_POLL_DISABLE	= 0x0100,
+	MIS_IS_OVERLAY		= 0x0200
+} mi_state_flag_t;
 
 extern krwlock_t i_mac_impl_lock;
 extern mod_hash_t *i_mac_impl_hash;
@@ -409,7 +429,7 @@ struct mac_impl_s {
 	krwlock_t		mi_rw_lock;
 	list_node_t		mi_node;
 	char			mi_name[LIFNAMSIZ];	/* WO */
-	uint32_t		mi_state_flags;
+	mi_state_flag_t		mi_state_flags;
 	void			*mi_driver;		/* Driver private, WO */
 	mac_info_t		mi_info;		/* WO */
 	mactype_t		*mi_type;		/* WO */
@@ -644,18 +664,6 @@ struct mac_impl_s {
 	(m)->mi_txhwclnt_used--;		\
 }
 
-/* for mi_state_flags */
-#define	MIS_DISABLED		0x0001
-#define	MIS_IS_VNIC		0x0002
-#define	MIS_IS_AGGR		0x0004
-#define	MIS_NOTIFY_DONE		0x0008
-#define	MIS_EXCLUSIVE		0x0010
-#define	MIS_EXCLUSIVE_HELD	0x0020
-#define	MIS_LEGACY		0x0040
-#define	MIS_NO_ACTIVE		0x0080
-#define	MIS_POLL_DISABLE	0x0100
-#define	MIS_IS_OVERLAY		0x0200
-
 #define	mi_getstat	mi_callbacks->mc_getstat
 #define	mi_start	mi_callbacks->mc_start
 #define	mi_stop		mi_callbacks->mc_stop
@@ -690,9 +698,11 @@ typedef struct mac_notify_task_arg {
  * Type of property information that can be returned by a driver.
  * Valid flags of the pr_flags of the mac_prop_info_t data structure.
  */
-#define	MAC_PROP_INFO_DEFAULT	0x0001
-#define	MAC_PROP_INFO_RANGE	0x0002
-#define	MAC_PROP_INFO_PERM	0x0004
+typedef enum {
+	MAC_PROP_INFO_DEFAULT	= 0x0001,
+	MAC_PROP_INFO_RANGE	= 0x0002,
+	MAC_PROP_INFO_PERM	= 0x0004
+} pr_flag_t;
 
 /*
  * Property information. pr_flags is a combination of one of the
@@ -703,7 +713,7 @@ typedef struct mac_notify_task_arg {
  * information about a property.
  */
 typedef struct mac_prop_info_state_s {
-	uint8_t			pr_flags;
+	pr_flag_t		pr_flags;
 	uint8_t			pr_perm;
 	uint8_t			pr_errno;
 	void			*pr_default;
