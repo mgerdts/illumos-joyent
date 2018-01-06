@@ -62,6 +62,24 @@ typedef struct mac_unicast_impl_s {			/* Protected by */
 #define	MAC_CLIENT_FLAGS_MULTI_PRIMARY		0x0004
 #define	MAC_CLIENT_FLAGS_PASSIVE_PRIMARY	0x0008
 
+/* MCI state flags */
+typedef enum {
+	MCIS_IS_VNIC			= 0x0001,
+	MCIS_EXCLUSIVE			= 0x0002,
+	MCIS_TAG_DISABLE		= 0x0004,
+	MCIS_STRIP_DISABLE		= 0x0008,
+	MCIS_IS_AGGR_PORT		= 0x0010,
+	MCIS_CLIENT_POLL_CAPABLE	= 0x0020,
+	MCIS_DESC_LOGGED		= 0x0040,
+	MCIS_SHARE_BOUND		= 0x0080,
+	MCIS_DISABLE_TX_VID_CHECK	= 0x0100,
+	MCIS_USE_DATALINK_NAME		= 0x0200,
+	MCIS_UNICAST_HW			= 0x0400,
+	MCIS_IS_AGGR			= 0x0800,
+	MCIS_RX_BYPASS_DISABLE		= 0x1000,
+	MCIS_NO_UNICAST_ADDR		= 0x2000
+} mci_state_flag_t;
+
 /*
  * One of these is instantiated per MAC client promiscuous callback.
  *
@@ -117,7 +135,7 @@ struct mac_client_impl_s {			/* Protected by */
 	 */
 	struct mac_impl_s	*mci_upper_mip;		/* WO */
 
-	uint32_t		mci_state_flags;	/* WO */
+	mci_state_flag_t	mci_state_flags;	/* WO */
 	mac_rx_t		mci_rx_fn;		/* Rx Quiescence */
 	void			*mci_rx_arg;		/* Rx Quiescence */
 	mac_direct_rx_t		mci_direct_rx_fn;	/* SL */
@@ -313,22 +331,6 @@ extern	int	mac_tx_percpu_cnt;
 #define	MAC_TAG_NEEDED(mcip)						\
 	(((mcip)->mci_state_flags & MCIS_TAG_DISABLE) == 0 &&		\
 	(mcip)->mci_nvids == 1)						\
-
-/* MCI state flags */
-#define	MCIS_IS_VNIC			0x0001
-#define	MCIS_EXCLUSIVE			0x0002
-#define	MCIS_TAG_DISABLE		0x0004
-#define	MCIS_STRIP_DISABLE		0x0008
-#define	MCIS_IS_AGGR_PORT		0x0010
-#define	MCIS_CLIENT_POLL_CAPABLE	0x0020
-#define	MCIS_DESC_LOGGED		0x0040
-#define	MCIS_SHARE_BOUND		0x0080
-#define	MCIS_DISABLE_TX_VID_CHECK	0x0100
-#define	MCIS_USE_DATALINK_NAME		0x0200
-#define	MCIS_UNICAST_HW			0x0400
-#define	MCIS_IS_AGGR			0x0800
-#define	MCIS_RX_BYPASS_DISABLE		0x1000
-#define	MCIS_NO_UNICAST_ADDR		0x2000
 
 /* Mac protection flags */
 #define	MPT_FLAG_V6_LOCAL_ADDR_SET	0x0001
