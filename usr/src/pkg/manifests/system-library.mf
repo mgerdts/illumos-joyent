@@ -24,6 +24,7 @@
 # Copyright 2012 OmniTI Computer Consulting, Inc.  All rights reserved.
 # Copyright (c) 2013 Gary Mills
 # Copyright 2017 Nexenta Systems, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 <include system-library.man3.inc>
@@ -127,6 +128,8 @@ dir path=usr/lib/scsi/plugins/smp/framework
 dir path=usr/lib/scsi/plugins/smp/framework/$(ARCH64)
 dir path=usr/lib/security
 dir path=usr/lib/security/$(ARCH64)
+dir path=usr/share/lib
+dir path=usr/share/lib/xml
 dir path=usr/share/man
 dir path=usr/share/man/man3
 dir path=usr/share/man/man3avl
@@ -547,6 +550,7 @@ file path=usr/lib/security/pkcs11_softtoken.so.1
 file path=usr/lib/security/pkcs11_tpm.so.1
 file path=usr/lib/straddr.so.2
 file path=usr/lib/watchmalloc.so.1
+file path=usr/share/lib/xml/nvlist.dtd.1
 # XXX: Obsoleted by open i18n?
 file path=usr/xpg4/lib/$(ARCH64)/libcurses.so.1
 file path=usr/xpg4/lib/$(ARCH64)/libcurses.so.2

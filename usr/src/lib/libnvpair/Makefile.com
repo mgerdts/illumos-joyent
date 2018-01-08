@@ -23,7 +23,7 @@
 # Use is subject to license terms.
 #
 # Copyright (c) 2012 by Delphix. All rights reserved.
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 LIBRARY=	libnvpair.a
@@ -34,7 +34,8 @@ OBJECTS=	libnvpair.o \
 		nvpair_alloc_fixed.o \
 		nvpair.o \
 		fnvpair.o \
-		nvpair_json.o
+		nvpair_json.o \
+		nvpair_xml.o
 
 include ../../Makefile.lib
 include ../../Makefile.rootfs
@@ -49,7 +50,7 @@ SRCS=		../libnvpair.c \
 #
 # Libraries added to the next line must be present in miniroot
 #
-LDLIBS +=	-lc -lnsl
+LDLIBS +=	-lc -lnsl -lxml2
 LIBS =		$(DYNLIB) $(LINTLIB)
 
 # turn off ptr-cast warnings
@@ -73,6 +74,7 @@ CERRWARN +=	-_gcc=-Wno-uninitialized
 
 CFLAGS +=	$(CCVERBOSE)
 CPPFLAGS +=	-D_REENTRANT
+pics/nvpair_xml.o := CPPFLAGS += -I$(ADJUNCT_PROTO)/usr/include/libxml2
 
 C99MODE=	-xc99=%all
 C99LMODE=	-Xc99=%all

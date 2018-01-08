@@ -219,6 +219,7 @@ SYMBOL_VERSION SUNW_1.1 {
 	nvlist_pack;
 	nvlist_size;
 	nvlist_unpack;
+	nvlist_unpack_xml;
 	nvpair_name;
 	nvpair_type;
 	nvpair_value_byte;

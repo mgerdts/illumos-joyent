@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+
+<!--
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Copyright (c) 2018, Joyent, Inc.
+-->
+
+<!ELEMENT nvlist	( nvpair* ) >
+<!ATTLIST nvlist	unique		( name | name-type ) >
+
+<!ELEMENT nvpair	( boolean | boolean_array | byte | byte_array |
+			double | double_array | int8 | int8_array |
+			int16 | int16_array | int32 | int32_array |
+			int64 | int64_array | nvlist | nvlist_array |
+			string | string_array | uint8 | uint8_array |
+			uint16 | uint16_array | uint32 | uint32_array |
+			uint64 | uint64_array ) >
+
+<!ELEMENT boolean	EMPTY>
+<!ATTLIST boolean	value		( true | false ) #REQUIRED>
+
+<!ELEMENT boolean_array	( boolean* ) >
+
+<!ELEMENT byte		EMPTY>
+<!ATTLIST byte		value		CDATA #REQUIRED>
+
+<!ELEMENT byte_array	( byte* ) >
+
+<!ELEMENT double	EMPTY>
+<!ATTLIST double	value		CDATA #REQUIRED>
+
+<!ELEMENT double_array	( double* ) >
+
+<!ELEMENT int8		EMPTY>
+<!ATTLIST int8		value		CDATA #REQUIRED>
+
+<!ELEMENT int8_array	( int8* ) >
+
+<!ELEMENT int16		EMPTY>
+<!ATTLIST int16		value		CDATA #REQUIRED>
+
+<!ELEMENT int16_array	( int16* ) >
+
+<!ELEMENT int32		EMPTY>
+<!ATTLIST int32		value		CDATA #REQUIRED>
+
+<!ELEMENT int32_array	( int32* ) >
+
+<!ELEMENT int64		EMPTY>
+<!ATTLIST int64		value		CDATA #REQUIRED>
+
+<!ELEMENT int64_array	( int64* ) >
+
+<!ELEMENT nvlist_array	( nvlist* ) >
+
+<!ELEMENT string	EMPTY>
+<!ATTLIST string	value		CDATA #REQUIRED>
+
+<!ELEMENT string_array	( string* ) >
+
+<!ELEMENT uint8		EMPTY>
+<!ATTLIST uint8		value		CDATA #REQUIRED>
+
+<!ELEMENT uint8_array	( uint8* ) >
+
+<!ELEMENT uint16	EMPTY>
+<!ATTLIST uint16	value		CDATA #REQUIRED>
+
+<!ELEMENT uint16_array	( uint16* ) >
+
+<!ELEMENT uint32	EMPTY>
+<!ATTLIST uint32	value		CDATA #REQUIRED>
+
+<!ELEMENT uint32_array	( uint32* ) >
+
+<!ELEMENT uint64	EMPTY>
+<!ATTLIST uint64	value		CDATA #REQUIRED>
+
+<!ELEMENT uint64_array	( uint64* ) >

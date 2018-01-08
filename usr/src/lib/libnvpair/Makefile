@@ -22,7 +22,7 @@
 # Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
 # Use is subject to license terms.
 #
-# ident	"%Z%%M%	%I%	%E% SMI"
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 include ../Makefile.lib
@@ -44,6 +44,13 @@ ROOTHDRDIR=	$(ROOT)/usr/include
 ROOTHDRS=	$(HDRS:%=$(ROOTHDRDIR)/%)
 CHECKHDRS=	$(HDRS:%.h=%.check)
 
+DTDS=		nvlist.dtd.1
+DTDDIR=		$(ROOT)/usr/share/lib/xml
+ROOTDTDS=	$(DTDS:%=$(DTDDIR)/%)
+
+$(DTDDIR)/%: %
+	$(INS.file)
+
 .KEEP_STATE:
 
 all install clean clobber lint: $(SUBDIRS)
@@ -56,6 +63,8 @@ $(ROOTHDRDIR)/%: %
 install_h: $(ROOTHDRS)
 
 check: $(CHECKHDRS)
+
+install:	$(ROOTDTDS)
 
 $(SUBDIRS):	FRC
 	@cd $@; pwd; $(MAKE) $(TARGET)
