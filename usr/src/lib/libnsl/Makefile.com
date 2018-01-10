@@ -22,10 +22,12 @@
 #
 # Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
 # Copyright 2011 Nexenta Systems, Inc. All rights reserved.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 LIBRARY= libnsl.a
 VERS=	.1
+BHYVELIBS= libnsl.so$(VERS)
 
 # objects are listed by source directory
 
