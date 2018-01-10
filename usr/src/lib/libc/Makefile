@@ -22,12 +22,14 @@
 # Copyright (c) 1989, 2010, Oracle and/or its affiliates. All rights reserved.
 #
 # Copyright 2010 Nexenta Systems, Inc.  All rights reserved.
+# Copyright (c) 2018, Joyent, Inc.
 # Use is subject to license terms.
 #
 
 LIBBASENAME=	libc
 LIBRARY=	$(LIBBASENAME:%=%.a)
 VERS=		.1
+BHYVELIBS=	libc.so$(VERS)
 
 # Note that we build libc_pic.a for the benefit of building
 # ld.so.1, but we do not install it.  Only ld.so.1 needs it
@@ -49,6 +51,8 @@ ROOTFS_LINTLIB64=	$(ROOTFS_LINTDIR64)/$(LINTLIB)
 
 # include common library definitions
 include ../Makefile.lib
+
+BHYVEROOTLIBDIR64=	$(ROOTFS_LIB)/brand/bhyve/root/lib/$(MACH64)
 
 #
 # on some architectures, we build multiple libc variants
@@ -177,7 +181,8 @@ inslib32:	$(ROOTFS_LIBS) $(ROOTFS_LINKS) $(ROOTFS_LINT) \
 
 inslib64:	$(ROOTFS_LIBS64) $(ROOTFS_LINKS64) \
 		$(ROOTFS_LINTLIB64) \
-		$(ROOTVARIANTLIBS64)
+		$(ROOTVARIANTLIBS64) \
+		$(BHYVEROOTLIBS64)
 
 install_h: all_h $(ROOTHDRS)
 
@@ -227,6 +232,11 @@ $(MACH)/$(LIB_PIC): FRC
 	@cd $(MACH); pwd; VERSION='$(VERSION)' $(MAKE) $(LIB_PIC)
 $(MACH64)/$(LIB_PIC): FRC
 	@cd $(MACH64); pwd; VERSION='$(VERSION)' $(MAKE) $(LIB_PIC)
+
+# This makefile breaks rules that others follow, hence special treatment.
+$(BHYVEROOTLIBDIR64)/%: $(ROOTFS_LIB64)/%
+	$(RM) $@
+	$(LN) $< $@
 
 all	:=	TARGET= all
 install	:=	TARGET= install
