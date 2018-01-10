@@ -20,7 +20,7 @@
 #
 #
 # Copyright (c) 1989, 2010, Oracle and/or its affiliates. All rights reserved.
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 #
@@ -68,6 +68,10 @@ $(ROOTLINTDIR)/%: $(SRCDIR)/%
 	$(INS.file)
 $(ROOTFS_LINTDIR)/%: $(SRCDIR)/%
 	$(INS.file)
+
+$(BHYVEROOTLIBDIR64)/%: $(ROOTLIBDIR64)/%
+	$(RM) $@
+	$(LN) $< $@
 
 $(ROOTDEMODIRS):
 	$(INS.dir)

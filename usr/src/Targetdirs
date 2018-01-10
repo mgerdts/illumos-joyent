@@ -28,6 +28,7 @@
 # Copyright 2014 Garrett D'Amore <garrett@damore.org>
 # Copyright 2016 Hans Rosenfeld <rosenfeld@grumpf.hope-2000.org>
 # Copyright 2016 Nexenta Systems, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 #
@@ -47,20 +48,35 @@ $(BUILD64)	TARGETDIRS += $(DIRS64)
 
 TARGETDIRS	+= $(FILELINKS) $(DIRLINKS)
 
-i386_DIRS=			\
-	/boot/acpi		\
-	/boot/acpi/tables	\
-	/boot/grub		\
-	/boot/grub/bin		\
-	/platform/i86pc		\
-	/lib/libmvec		\
-	/usr/lib/brand/lx	\
+i386_DIRS= \
+	/boot/acpi \
+	/boot/acpi/tables \
+	/boot/grub \
+	/boot/grub/bin \
+	/lib/brand \
+	/lib/brand/bhyve \
+	/lib/brand/bhyve/root \
+	/lib/brand/bhyve/root/lib \
+	/lib/libmvec \
+	/platform/i86pc \
+	/usr/lib/brand/bhyve \
+	/usr/lib/brand/bhyve/root \
+	/usr/lib/brand/bhyve/root/dev \
+	/usr/lib/brand/bhyve/root/lib \
+	/usr/lib/brand/bhyve/root/system \
+	/usr/lib/brand/bhyve/root/contract \
+	/usr/lib/brand/bhyve/root/usr \
+	/usr/lib/brand/bhyve/root/usr/lib \
+	/usr/lib/brand/bhyve/root/usr/sbin \
+	/usr/lib/brand/bhyve/root/var \
+	/usr/lib/brand/bhyve/root/var/run \
+	/usr/lib/brand/lx \
 	/usr/lib/brand/lx/amd64 \
 	/usr/lib/brand/lx/distros \
-	/usr/lib/xen		\
+	/usr/lib/xen \
 	/usr/lib/xen/bin
 
-sparc_DIRS=				\
+sparc_DIRS= \
 	/usr/lib/ldoms
 
 sparc_64ONLY= $(POUND_SIGN)
@@ -437,7 +453,9 @@ sparcv9_DIRS64= \
 	/usr/platform/sun4u-opl/lib
 
 amd64_DIRS64= \
-	/platform/i86pc/amd64
+	/lib/brand/bhyve/root/lib/$(MACH64) \
+	/platform/i86pc/amd64 \
+	/usr/lib/brand/bhyve/root/usr/lib/$(MACH64)
 
 DIRS64= \
 	$($(MACH64)_DIRS64) \

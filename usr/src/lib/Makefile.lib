@@ -21,7 +21,7 @@
 # Copyright 2015 Gary Mills
 # Copyright 2015 Igor Kozhukhov <ikozhukhov@gmail.com>
 # Copyright (c) 1989, 2010, Oracle and/or its affiliates. All rights reserved.
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 #
 # Definitions common to libraries.
@@ -115,6 +115,10 @@ ROOTFS_LINT64=	$(LINTSRC:%=$(ROOTFS_LINTDIR64)/%)
 ROOTMAN3=     $(ROOT)/usr/share/man/man3
 ROOTMAN3FILES=        $(MAN3FILES:%=$(ROOTMAN3)/%)
 $(ROOTMAN3FILES) := FILEMODE= 444
+
+# bhyve alternate root only gets 64-bit libraries
+BHYVEROOTLIBDIR64=	$(ROOTLIBDIR)/brand/bhyve/root/usr/lib/$(MACH64)
+BHYVEROOTLIBS64=	$(BHYVELIBS:%=$(BHYVEROOTLIBDIR64)/%)
 
 # Demo rules
 DEMOFILES=

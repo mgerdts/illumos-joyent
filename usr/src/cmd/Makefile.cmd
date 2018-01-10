@@ -102,6 +102,12 @@ ROOTMAN1M=	$(ROOTMAN)/man1m
 ROOTMAN3=	$(ROOTMAN)/man3
 ROOTVARSMB=	$(ROOT)/var/smb
 
+#
+# There is no need to maintain the $(MACH) directories in the bhyve brand's
+# alternate root.  All executables should be 64-bit.  32-bit libs are not
+# installed there.
+#
+BHYVEUSRSBIN=	$(ROOT)/usr/lib/brand/bhyve/root/usr/sbin
 
 #
 # Like ROOTLIBDIR in $(SRC)/Makefile.lib, any lower-level Makefiles that
