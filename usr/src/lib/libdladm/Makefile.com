@@ -20,11 +20,12 @@
 #
 #
 # Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
-# Copyright 2015, Joyent, Inc.
+# Copyright 2018, Joyent, Inc.
 #
 
 LIBRARY = libdladm.a
 VERS    = .1
+BHYVELIBS = libdladm.so$(VERS)
 OBJECTS = libdladm.o secobj.o linkprop.o libdllink.o libdlaggr.o \
 	libdlwlan.o libdlvnic.o libdlmgmt.o libdlvlan.o	libdlib.o\
 	flowattr.o flowprop.o propfuncs.o libdlflow.o libdlstat.o \
