@@ -1303,8 +1303,6 @@ f lib/amd64/libuuid.so.1 0755 root bin
 s lib/amd64/libuuid.so=libuuid.so.1
 f lib/amd64/libuutil.so.1 0755 root bin
 s lib/amd64/libuutil.so=libuutil.so.1
-f lib/amd64/libvmmapi.so.1 0755 root bin
-s lib/amd64/libvmmapi.so=libvmmapi.so.1
 f lib/amd64/libw.so.1 0755 root bin
 s lib/amd64/libw.so=libw.so.1
 f lib/amd64/libxnet.so.1 0755 root bin
@@ -5033,6 +5031,8 @@ s usr/lib/amd64/libuuid.so.1=../../../lib/amd64/libuuid.so.1
 s usr/lib/amd64/libuuid.so=../../../lib/amd64/libuuid.so.1
 s usr/lib/amd64/libuutil.so.1=../../../lib/amd64/libuutil.so.1
 s usr/lib/amd64/libuutil.so=../../../lib/amd64/libuutil.so.1
+f usr/lib/amd64/libvmmapi.so.1 0755 root bin
+s usr/lib/amd64/libvmmapi.so=libvmmapi.so.1
 f usr/lib/amd64/libvarpd.so.1 0755 root bin
 f usr/lib/amd64/libvnd.so.1 0755 root bin
 s usr/lib/amd64/libvnd.so=libvnd.so.1
