@@ -874,12 +874,15 @@ setup_subproc_env(boolean_t debug)
 
 		(void) strlcat(dev_resources, match, sizeof (dev_resources));
 		(void) strlcat(dev_resources, " ", sizeof (dev_resources));
+		set_zonecfg_env(RSRC_DEV, match, "path", match);
 
 		for (rap = dtab.zone_dev_attrp; rap != NULL;
 		    rap = rap->zone_res_attr_next)
 			set_zonecfg_env(RSRC_DEV, match,
 			    rap->zone_res_attr_name, rap->zone_res_attr_value);
 	}
+
+	(void) setenv("_ZONECFG_device_resources", dev_resources, 1);
 
 	(void) zonecfg_enddevent(snap_hndl);
 

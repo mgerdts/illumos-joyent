@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE zone PUBLIC "-//Sun Microsystems Inc//DTD Zones//EN" "file:///usr/share/lib/xml/dtd/zonecfg.dtd.1">
+
+<zone name="bhyve" zonepath="" autoboot="false" brand="bhyve">
+</zone>
