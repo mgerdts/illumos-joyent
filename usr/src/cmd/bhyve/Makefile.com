@@ -7,6 +7,9 @@
 # Management Information without the express written permission from
 # Pluribus Networks Inc is prohibited, and any such unauthorized removal
 # or alteration will be a violation of federal law.
+#
+# Copyright (c) 2018, Joyent, Inc.
+#
 
 PROG= bhyve
 
@@ -55,7 +58,8 @@ SRCS =	acpi.c			\
 	vmm_instruction_emul.c	\
 	xmsr.c			\
 	spinup_ap.c		\
-	bhyve_sol_glue.c
+	bhyve_sol_glue.c	\
+	zhyve.c
 
 OBJS = $(SRCS:.c=.o)
 
@@ -80,6 +84,9 @@ CPPFLAGS =	-I$(COMPAT)/freebsd -I$(CONTRIB)/freebsd \
 LDLIBS +=	-lsocket -lnsl -ldlpi -ldladm -lkstat -lmd -luuid -lvmmapi -lz
 
 POST_PROCESS += ; $(GENSETDEFS) $@
+
+# Real main is in zhyve.c
+bhyverun.o :=	CPPFLAGS += -Dmain=bhyve_main
 
 all: $(PROG)
 
