@@ -1230,7 +1230,6 @@ MANLINKS=	AVL_NEXT.9f					\
 		sdev_ctx_vtype_data.9f				\
 		sdev_plugin_register.9f				\
 		sdev_plugin_unregister.9f			\
-		sdev_plugin.9f					\
 		sema_destroy.9f					\
 		sema_init.9f					\
 		sema_p.9f					\
