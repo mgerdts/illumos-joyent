@@ -21,11 +21,13 @@
 #
 # Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
 # Use is subject to license terms.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 LIBRARY = libdlpi.a
 VERS    = .1
 OBJECTS = libdlpi.o
+BHYVELIBS = libdlpi.so$(VERS)
 
 include ../../Makefile.lib
 
