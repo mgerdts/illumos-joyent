@@ -1325,16 +1325,16 @@ d lib/brand/bhyve 0755 root sys
 d lib/brand/bhyve/root 0755 root sys
 d lib/brand/bhyve/root/lib 0755 root sys
 d lib/brand/bhyve/root/lib/amd64 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/ld.so.1 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/libc.so.1 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/libdladm.so.1 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/libdlpi.so.1 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/libmd.so.1 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/libnsl.so.1 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/libnvpair.so.1 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/libsocket.so.1 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/libuuid.so.1 0755 root sys
-f lib/brand/bhyve/root/lib/amd64/libvmmapi.so.1 0755 root sys
+h lib/brand/bhyve/root/lib/amd64/ld.so.1=lib/amd64/ld.so.1
+h lib/brand/bhyve/root/lib/amd64/libc.so.1=lib/amd64/libc.so.1
+h lib/brand/bhyve/root/lib/amd64/libdladm.so.1=lib/amd64/libdladm.so.1
+h lib/brand/bhyve/root/lib/amd64/libdlpi.so.1=lib/amd64/libdlpi.so.1
+h lib/brand/bhyve/root/lib/amd64/libmd.so.1=lib/amd64/libmd.so.1
+h lib/brand/bhyve/root/lib/amd64/libnsl.so.1=lib/amd64/libnsl.so.1
+h lib/brand/bhyve/root/lib/amd64/libnvpair.so.1=lib/amd64/libnvpair.so.1
+h lib/brand/bhyve/root/lib/amd64/libsocket.so.1=lib/amd64/libsocket.so.1
+h lib/brand/bhyve/root/lib/amd64/libuuid.so.1=lib/amd64/libuuid.so.1
+h lib/brand/bhyve/root/lib/amd64/libvmmapi.so.1=lib/amd64/libvmmapi.so.1
 f lib/c_synonyms.so.1 0755 root bin
 d lib/crypto 0755 root bin
 s lib/crypto/32=.
@@ -5108,19 +5108,23 @@ f usr/lib/audit/audit_record_attr 0444 root bin
 d usr/lib/autofs 0755 root sys
 f usr/lib/autofs/automountd 0555 root bin
 d usr/lib/brand 0755 root bin
-d usr/lib/brand/bhyve 0755 root sys
-d usr/lib/brand/bhyve/root 0755 root sys
-d usr/lib/brand/bhyve/root/contract 0755 root sys
-d usr/lib/brand/bhyve/root/dev 0755 root sys
-d usr/lib/brand/bhyve/root/lib 0755 root sys
-d usr/lib/brand/bhyve/root/system 0755 root sys
-d usr/lib/brand/bhyve/root/usr 0755 root sys
-d usr/lib/brand/bhyve/root/usr/lib 0755 root sys
-d usr/lib/brand/bhyve/root/usr/lib/amd64 0755 root sys
-d usr/lib/brand/bhyve/root/usr/sbin 0755 root sys
-f usr/lib/brand/bhyve/root/usr/sbin/zhyve 0755 root sys
-d usr/lib/brand/bhyve/root/var 0755 root sys
-d usr/lib/brand/bhyve/root/var/run 0755 root sys
+d usr/lib/brand/bhyve 0555 root sys
+f usr/lib/brand/bhyve/boot 0555 root sys
+f usr/lib/brand/bhyve/config.xml 0444 root sys
+f usr/lib/brand/bhyve/halt 0555 root sys
+f usr/lib/brand/bhyve/platform.xml 0444 root sys
+d usr/lib/brand/bhyve/root 0555 root sys
+d usr/lib/brand/bhyve/root/contract 0555 root sys
+d usr/lib/brand/bhyve/root/dev 0555 root sys
+d usr/lib/brand/bhyve/root/lib 0555 root sys
+d usr/lib/brand/bhyve/root/system 0555 root sys
+d usr/lib/brand/bhyve/root/usr 0555 root sys
+d usr/lib/brand/bhyve/root/usr/lib 0555 root sys
+d usr/lib/brand/bhyve/root/usr/lib/amd64 0555 root sys
+d usr/lib/brand/bhyve/root/usr/sbin 0555 root sys
+h usr/lib/brand/bhyve/root/usr/sbin/zhyve=usr/sbin/amd64/bhyve
+d usr/lib/brand/bhyve/root/var 0555 root sys
+d usr/lib/brand/bhyve/root/var/run 0555 root sys
 d usr/lib/brand/lx 0755 root bin
 s usr/lib/brand/lx/64=amd64
 d usr/lib/brand/lx/amd64 0755 root bin
