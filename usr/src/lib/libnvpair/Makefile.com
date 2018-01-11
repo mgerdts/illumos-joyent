@@ -23,11 +23,12 @@
 # Use is subject to license terms.
 #
 # Copyright (c) 2012 by Delphix. All rights reserved.
-# Copyright (c) 2014, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 LIBRARY=	libnvpair.a
 VERS=		.1
+BHYVELIBS=	libnvpair.so$(VERS)
 
 OBJECTS=	libnvpair.o \
 		nvpair_alloc_system.o \
