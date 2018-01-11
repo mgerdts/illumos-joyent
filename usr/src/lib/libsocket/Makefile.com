@@ -21,13 +21,15 @@
 
 #
 # Copyright (c) 1997, 2010, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 LIBRARY	=	libsocket.a
 VERS =		.1
+BHYVELIBS =	libsocket.so$(VERS)
 
 INETOBJS =	bindresvport.o bootparams_getbyname.o ether_addr.o \
-	   	getaddrinfo.o getnameinfo.o getnetent.o getnetent_r.o \
+		getaddrinfo.o getnameinfo.o getnetent.o getnetent_r.o \
 		getprotoent.o getprotoent_r.o getservbyname_r.o getservent.o \
 		getservent_r.o inet_lnaof.o inet_mkaddr.o inet_network.o \
 		inet6_opt.o inet6_rthdr.o interface_id.o link_addr.o \
