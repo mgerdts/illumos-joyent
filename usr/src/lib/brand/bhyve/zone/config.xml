@@ -1,24 +1,9 @@
 <?xml version="1.0"?>
 
 <!--
- CDDL HEADER START
-
- The contents of this file are subject to the terms of the
- Common Development and Distribution License (the "License").
- You may not use this file except in compliance with the License.
-
- You can obtain a copy of the license at usr/src/OPENSOLARIS.LICENSE
- or http://www.opensolaris.org/os/licensing.
- See the License for the specific language governing permissions
- and limitations under the License.
-
- When distributing Covered Code, include this CDDL HEADER in each
- file and include the License file at usr/src/OPENSOLARIS.LICENSE.
- If applicable, add the following below this CDDL HEADER, with the
- fields enclosed by brackets "[]" replaced with your own identifying
- information: Portions Copyright [yyyy] [name of copyright owner]
-
- CDDL HEADER END
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
  Copyright (c) 2018, Joyent, Inc.
 
@@ -31,26 +16,26 @@
 <brand name="bhyve">
 	<modname></modname>
 
-	<initname>/startvm</initname>
+	<initname>/usr/sbin/zhyve</initname>
 	<restartinit>false</restartinit>
-	<login_cmd>/usr/bin/login -z %Z %u</login_cmd>
-	<forcedlogin_cmd>/usr/bin/login -z %Z -f %u</forcedlogin_cmd>
-	<user_cmd>/usr/bin/getent passwd %u</user_cmd>
+	<login_cmd />
+	<forcedlogin_cmd />
+	<user_cmd />
 
 	<install>/usr/lib/brand/bhyve/binstall -z %z -R %R</install>
 	<installopts>R:t:U:q:z:</installopts>
 	<boot>/usr/lib/brand/bhyve/boot %z</boot>
 	<halt>/usr/lib/brand/bhyve/halt %z</halt>
-	<verify_cfg></verify_cfg>
-	<verify_adm></verify_adm>
-	<postclone></postclone>
-	<postinstall></postinstall>
-	<attach>/usr/lib/brand/bhyve/battach -z %z -R %R</attach>
-	<detach>/usr/lib/brand/bhyve/bdetach -z %z -R %R</detach>
-	<clone></clone>
-	<uninstall>/usr/lib/brand/bhyve/buninstall -z %z -R %R</uninstall>
-	<prestatechange>/usr/lib/brand/bhyve/prestate %z %R</prestatechange>
-	<poststatechange>/usr/lib/brand/bhyve/poststate %z %R</poststatechange>
+	<verify_cfg />
+	<verify_adm />
+	<postclone />
+	<postinstall />
+	<attach>/usr/lib/brand/bhyve/attach -z %z -R %R</attach>
+	<detach />
+	<clone>/usr/lib/brand/bhyve/clone -z %z -R %R %Z</clone>
+	<uninstall>/usr/lib/brand/bhyve/uninstall -z %z -R %R</uninstall>
+	<prestatechange />
+	<poststatechange />
 
 	<privilege set="default" name="net_rawaccess" ip-type="exclusive" />
 	<privilege set="default" name="proc_clock_highres" />
