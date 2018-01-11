@@ -7,9 +7,6 @@
 # Management Information without the express written permission from
 # Pluribus Networks Inc is prohibited, and any such unauthorized removal
 # or alteration will be a violation of federal law.
-#
-# Copyright (c) 2018, Joyent, Inc.
-#
 
 LIBRARY	= libvmmapi.a
 VERS		= .1
@@ -20,6 +17,9 @@ OBJECTS	= vmmapi.o expand_number.o
 
 # include library definitions
 include ../../Makefile.lib
+
+# install this library in the root filesystem
+include ../../Makefile.rootfs
 
 SRCDIR		= ../common
 
