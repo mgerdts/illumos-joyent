@@ -39,8 +39,8 @@
 
 	<install>/usr/lib/brand/bhyve/binstall -z %z -R %R</install>
 	<installopts>R:t:U:q:z:</installopts>
-	<boot></boot>
-	<halt></halt>
+	<boot>/usr/lib/brand/bhyve/boot %z</boot>
+	<halt>/usr/lib/brand/bhyve/halt %z</halt>
 	<verify_cfg></verify_cfg>
 	<verify_adm></verify_adm>
 	<postclone></postclone>

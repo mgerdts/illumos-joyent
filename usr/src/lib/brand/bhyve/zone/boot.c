@@ -297,6 +297,7 @@ main(int argc, char **argv)
 {
 	int fd;
 	char *zhargv[ZH_MAXARGS] = {
+		"zhyve",		/* Squats on argv[0] */
 		"-P", "-H",		/* Guest exits on pause and halt isns */
 		"-s", "1,lpc",		/* LPC PCI-ISA bridge at PCI 0:1:0 */
 		"-l", "bootrom," ROMFILE,

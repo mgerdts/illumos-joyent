@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <libnvpair.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,81 +69,41 @@ full_read(int fd, char *buf, size_t len)
 }
 
 /*
- * Reads the command line options from the file named by path, one option per
- * line.  On return, (*argv)[0] references the global variable cmdname.  The
- * remaining members of *argv reference memory allocated from a single
- * allocation.  If there is a need to free this memory, free((*argvp)[1]) then
- * free(*argvp).
+ * Reads the command line options from the packed nvlist in the file referenced
+ * by path.  On success, 0 is returned and the members of *argv reference memory
+ * allocated from an nvlist.  On failure, -1 is returned.
  */
 static int
-parse_options_file(const char *path, int *argcp, char ***argvp)
+parse_options_file(const char *path, uint *argcp, char ***argvp)
 {
 	int fd = -1;
 	struct stat stbuf;
 	char *buf = NULL;
-	int argc;
-	char **argv = NULL;
-	char *nl;
-	int i;
+	nvlist_t *nvl = NULL;
+	int ret;
 
 	if ((fd = open(path, O_RDONLY)) < 0 ||
 	    fstat(fd, &stbuf) != 0 ||
-	    (buf = malloc(stbuf.st_size + 1)) == NULL ||
-	    full_read(fd, buf, stbuf.st_size) != 0) {
-		goto fail;
+	    (buf = malloc(stbuf.st_size)) == NULL ||
+	    full_read(fd, buf, stbuf.st_size) != 0 ||
+	    nvlist_unpack(buf, stbuf.st_size, &nvl, 0) != 0 ||
+	    nvlist_lookup_string_array(nvl, "zyhve_args", argvp, argcp) != 0) {
+		nvlist_free(nvl);
+		ret = -1;
+	} else {
+		ret = 0;
 	}
 
-	buf[stbuf.st_size] = '\0';
-	for (argc = 1, nl = buf; nl != NULL; nl = strchr(nl, '\n')) {
-		if (nl[1] == '\0')
-			break;
-		argc++;
-	}
-
-	if ((argv = malloc(sizeof (*argv) * argc + 1)) == NULL) {
-		goto fail;
-	}
-
-	argv[0] = (char *)cmdname;
-	for (i = 1, nl = buf; i < argc; i++) {
-		argv[i] = nl;
-		nl = strchr(nl, '\n');
-		if (nl == NULL) {
-			i++;
-			break;
-		}
-		*nl = '\0';
-		nl++;
-	}
-	assert(i == argc);
-	argv[argc] = NULL;
-
-	/*
-	 * If the file had no arguments, it won't be referenced by argv and as
-	 * such could not be freed by the caller.
-	 */
-	if (argc == 1) {
-		free(buf);
-	}
-
-	*argcp = argc;
-	*argvp = argv;
-	return (0);
-
-fail:
-	if (fd != -1) {
-		(void) close(fd);
-	}
 	free(buf);
-	free(argv);
+	(void) close(fd);
 
-	return (-1);
+	return (ret);
 }
 
 int
 main(int argc, char **argv)
 {
-	int zargc;
+	uint zargc;
 	char **zargv;
 
 	get_cmdname(argv[0]);
