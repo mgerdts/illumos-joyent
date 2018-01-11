@@ -1325,6 +1325,7 @@ d lib/brand/bhyve 0755 root sys
 d lib/brand/bhyve/root 0755 root sys
 d lib/brand/bhyve/root/lib 0755 root sys
 d lib/brand/bhyve/root/lib/amd64 0755 root sys
+f lib/brand/bhyve/root/lib/amd64/ld.so.1 0755 root sys
 f lib/brand/bhyve/root/lib/amd64/libc.so.1 0755 root sys
 f lib/brand/bhyve/root/lib/amd64/libdladm.so.1 0755 root sys
 f lib/brand/bhyve/root/lib/amd64/libdlpi.so.1 0755 root sys
