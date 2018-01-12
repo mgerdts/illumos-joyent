@@ -1324,6 +1324,7 @@ d lib/brand 0755 root sys
 d lib/brand/bhyve 0755 root sys
 d lib/brand/bhyve/root 0755 root sys
 d lib/brand/bhyve/root/lib 0755 root sys
+s lib/brand/bhyve/root/lib/64=amd64
 d lib/brand/bhyve/root/lib/amd64 0755 root sys
 h lib/brand/bhyve/root/lib/amd64/ld.so.1=lib/amd64/ld.so.1
 h lib/brand/bhyve/root/lib/amd64/libc.so.1=lib/amd64/libc.so.1
@@ -5121,6 +5122,8 @@ d usr/lib/brand/bhyve/root/etc 0555 root sys
 d usr/lib/brand/bhyve/root/etc/svc 0555 root sys
 d usr/lib/brand/bhyve/root/etc/svc/volatile 0755 root sys
 d usr/lib/brand/bhyve/root/lib 0555 root sys
+s usr/lib/brand/bhyve/root/lib/64=amd64
+d usr/lib/brand/bhyve/root/lib/amd64 0555 root sys
 d usr/lib/brand/bhyve/root/system 0555 root sys
 d usr/lib/brand/bhyve/root/usr 0555 root sys
 d usr/lib/brand/bhyve/root/usr/lib 0555 root sys
