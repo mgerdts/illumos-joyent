@@ -50,11 +50,12 @@
 #include <unistd.h>
 #include <zone.h>
 
-/* These paths are relative to the zone root. */
+/* These two paths must be relative to the zone root. */
 #define	BHYVE_DIR		"var/run/bhyve"
 #define	BHYVE_ARGS_FILE		BHYVE_DIR "/" "zhyve.cmd"
-#define ROMFILE			"usr/share/bhyve/BHYVE_UEFI.fd"
+
 #define ZH_MAXARGS		100
+#define ROMFILE			"/usr/share/bhyve/BHYVE_UEFI.fd"
 
 boolean_t debug;
 
@@ -97,9 +98,10 @@ add_arg(int *argc, char **argv, char *val)
 		(void) printf("Error: too many arguments\n");
 		return (1);
 	}
-	argv[*argc] = val;
+	argv[*argc] = strdup(val);
+	assert(argv[*argc] != NULL);
+	dprintf(("%s: argv[%d]='%s'\n", __func__, *argc, argv[*argc]));
 	(*argc)++;
-	dprintf(("%s: '%s'\n", __func__, val));
 	return (0);
 }
 
@@ -320,13 +322,14 @@ main(int argc, char **argv)
 	zonepath = argv[2];
 
 	for (zhargc = 0; zhargv[zhargc] != NULL; zhargc++) {
-		dprintf(("def_arg: '%s'\n", zhargv[zhargc]));
+		dprintf(("def_arg: argv[%d]='%s'\n", zhargc, zhargv[zhargc]));
 	}
 
 	if (add_cpu(&zhargc, (char **)&zhargv) != 0 ||
 	    add_ram(&zhargc, (char **)&zhargv) != 0 ||
 	    add_disks(&zhargc, (char **)&zhargv) != 0 ||
-	    add_nets(&zhargc, (char **)&zhargv) != 0) {
+	    add_nets(&zhargc, (char **)&zhargv) != 0 ||
+	    add_arg(&zhargc, (char **)&zhargv, zonename) != 0) {
 		return (1);
 	}
 
@@ -342,7 +345,12 @@ main(int argc, char **argv)
 		return (1);
 	}
 
-	if (nvlist_pack(nvl, &nvbuf, &nvbuflen, NV_ENCODE_NATIVE, 0) != 0) {
+	if (debug) {
+		dprintf(("packing nvlist:\n"));
+		nvlist_print(stdout, nvl);
+	}
+
+	if (nvlist_pack(nvl, &nvbuf, &nvbuflen, NV_ENCODE_XDR, 0) != 0) {
 		(void) printf("Error: failed to pack nvlist\n");
 		return (1);
 	}
