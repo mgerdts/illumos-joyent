@@ -50,10 +50,20 @@
 #include <unistd.h>
 #include <zone.h>
 
-#define	BHYVE_DIR		"/var/run/bhyve"
+/* These paths are relative to the zone root. */
+#define	BHYVE_DIR		"var/run/bhyve"
 #define	BHYVE_ARGS_FILE		BHYVE_DIR "zhyve.args"
-#define ROMFILE			"/usr/share/bhyve/BHYVE_UEFI.fd"
+#define ROMFILE			"usr/share/bhyve/BHYVE_UEFI.fd"
 #define ZH_MAXARGS		100
+
+boolean_t debug;
+
+#define	dprintf(x) if (debug) (void)printf x
+#define	return(x) { \
+	dprintf(("%s:%d %s returns %d\n", __FILE__, __LINE__, __func__, x)); \
+	return (x); \
+}
+
 
 char *
 get_zcfg_var(char *rsrc, char *inst, char *prop)
@@ -74,7 +84,8 @@ get_zcfg_var(char *rsrc, char *inst, char *prop)
 	}
 
 	ret = getenv(envvar);
-	(void) printf("%s: '%s=%s'\n", __func__, envvar, ret ? ret : "<null>");
+
+	dprintf(("%s: '%s=%s'\n", __func__, envvar, ret ? ret : "<null>"));
 
 	return (ret);
 }
@@ -88,6 +99,7 @@ add_arg(int *argc, char **argv, char *val)
 	}
 	argv[*argc] = val;
 	(*argc)++;
+	dprintf(("%s: '%s'\n", __func__, val));
 	return (0);
 }
 
@@ -271,6 +283,15 @@ full_write(int fd, char *buf, size_t buflen)
 	return (0);
 }
 
+void
+init_debug(void)
+{
+	char *val = getenv("_ZONEADMD_brand_debug");
+
+	debug = (val != NULL && val[0] != '\0');
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -291,6 +312,8 @@ main(int argc, char **argv)
 	char *zonename;
 	char *zonepath;
 
+	init_debug();
+
 	if (argc != 3) {
 		(void) fprintf(stderr, "Error: bhyve boot program called with "
 		    "%d args, expecting 2\n", argc - 1);
@@ -299,8 +322,9 @@ main(int argc, char **argv)
 	zonename = argv[1];
 	zonepath = argv[2];
 
-	for (zhargc = 0; zhargv[zhargc] != NULL; zhargc++)
-		;
+	for (zhargc = 0; zhargv[zhargc] != NULL; zhargc++) {
+		dprintf(("def_arg: '%s'\n", zhargv[zhargc]));
+	}
 
 	if (add_cpu(&zhargc, (char **)&zhargv) != 0 ||
 	    add_ram(&zhargc, (char **)&zhargv) != 0 ||
