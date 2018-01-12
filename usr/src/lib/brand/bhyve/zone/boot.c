@@ -55,34 +55,6 @@
 #define ROMFILE			"/usr/share/bhyve/BHYVE_UEFI.fd"
 #define ZH_MAXARGS		100
 
-
-/* ARGSUSED */
-int
-close_3plus(void *data, int fd)
-{
-	if (fd < 3)
-		return (0);
-	return (close(fd));
-}
-
-int
-enter_zone(char *zonename)
-{
-	zoneid_t zoneid;
-
-	/* Clean up things that can cause zone_enter() to fail. */
-	(void) chdir("/");
-	(void) fdwalk(close_3plus, NULL);
-
-	if ((zoneid = getzoneidbyname(zonename)) == -1) {
-		(void) fprintf(stderr, "Error: zone %s has no kernel state\n",
-		    zonename);
-		return (1);
-	}
-
-	return (zone_enter(zoneid));
-}
-
 char *
 get_zcfg_var(char *rsrc, char *inst, char *prop)
 {
@@ -314,12 +286,18 @@ main(int argc, char **argv)
 	nvlist_t *nvl;
 	char *nvbuf;
 	size_t nvbuflen;
+	char zoneroot[MAXPATHLEN];
+	int zrfd;
+	char *zonename;
+	char *zonepath;
 
-	if (argc != 2) {
+	if (argc != 3) {
 		(void) fprintf(stderr, "Error: bhyve boot program called with "
-		    "%d args, expecting 1", argc - 1);
+		    "%d args, expecting 2\n", argc - 1);
 		return (1);
 	}
+	zonename = argv[1];
+	zonepath = argv[2];
 
 	for (zhargc = 0; zhargv[zhargc] != NULL; zhargc++)
 		;
@@ -348,21 +326,33 @@ main(int argc, char **argv)
 		return (1);
 	}
 
-	/*
-	 * Enter the zone so that we are immune to symlink attacks and similar
-	 * while creating directories files.
-	 */
-	if (enter_zone(argv[1]) != 0) {
+	if (snprintf(zoneroot, sizeof (zoneroot), "%s/root", zonepath) >=
+	    sizeof (zoneroot)) {
+		(void) fprintf(stderr, "Error: zonepath '%s' too long\n",
+		    zonepath);
 		return (1);
 	}
 
-	if (mkdir(BHYVE_DIR, 0700) != 0 && errno != EEXIST) {
+	if ((zrfd = open(zoneroot, O_RDONLY|O_SEARCH)) < 0) {
+		(void) fprintf(stderr,
+		    "Error: cannot open zone root '%s': %s\n", zoneroot,
+		    strerror(errno));
+		return (1);
+	}
+
+	/*
+	 * This mkdirat() and the subsequent openat() are only safe because the
+	 * zone root is always under the global zone's exclusive control (always
+	 * read-only in all zones) and the writable directory is a tmpfs file
+	 * system that was just mounted and no zone code has run yet.
+	 */
+	if (mkdirat(zrfd, BHYVE_DIR, 0700) != 0 && errno != EEXIST) {
 		(void) fprintf(stderr, "Error: failed to create directory %s "
 		    "in zone: %s\n" BHYVE_DIR, strerror(errno));
 		return (1);
 	}
 
-	fd = open(BHYVE_ARGS_FILE, O_WRONLY|O_CREAT|O_EXCL, 0600);
+	fd = openat(zrfd, BHYVE_ARGS_FILE, O_WRONLY|O_CREAT|O_EXCL, 0600);
 	if (fd < 0) {
 		(void) fprintf(stderr, "Error: failed to create file %s "
 		    "in zone: %s\n" BHYVE_ARGS_FILE, strerror(errno));

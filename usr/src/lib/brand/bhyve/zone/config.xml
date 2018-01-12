@@ -24,7 +24,7 @@
 
 	<install>/usr/lib/brand/bhyve/binstall -z %z -R %R</install>
 	<installopts>R:t:U:q:z:</installopts>
-	<boot>/usr/lib/brand/bhyve/boot %z</boot>
+	<boot>/usr/lib/brand/bhyve/boot %z %R</boot>
 	<halt />
 	<verify_cfg />
 	<verify_adm />
