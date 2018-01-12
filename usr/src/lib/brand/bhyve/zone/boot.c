@@ -94,7 +94,7 @@ int
 add_arg(int *argc, char **argv, char *val)
 {
 	if (*argc >= ZH_MAXARGS) {
-		(void) fprintf(stderr, "Error: too many arguments\n");
+		(void) printf("Error: too many arguments\n");
 		return (1);
 	}
 	argv[*argc] = val;
@@ -158,8 +158,7 @@ add_disks(int *argc, char **argv)
 		}
 
 		if ((path = get_zcfg_var("device", disk, "path")) == NULL) {
-			(void) fprintf(stderr, "Error: disk %s has no path\n",
-			    disk);
+			(void) printf("Error: disk %s has no path\n", disk);
 			return (-1);
 		}
 
@@ -167,7 +166,7 @@ add_disks(int *argc, char **argv)
 		val = get_zcfg_var("device", disk, "boot");
 		if (val != NULL && strcmp(val, "true") == 0) {
 			if (boot != NULL) {
-				(void) fprintf(stderr, "Error: "
+				(void) printf("Error: "
 				    "multiple boot disks: %s %s\n",
 				    boot, path);
 				return (-1);
@@ -183,8 +182,7 @@ add_disks(int *argc, char **argv)
 		if (snprintf(slotconf, sizeof (slotconf),
 		    "%d:%d,virtio-blk,%s", pcislot, pcifn, path) >=
 		    sizeof (slotconf)) {
-			(void) fprintf(stderr,
-			    "Error: disk path '%s' too long\n", path);
+			(void) printf("Error: disk path '%s' too long\n", path);
 			return (-1);
 		}
 
@@ -226,7 +224,7 @@ add_nets(int *argc, char **argv)
 		val = get_zcfg_var("net", net, "primary");
 		if (val != NULL && strcmp(val, "true") == 0) {
 			if (primary != NULL) {
-				(void) fprintf(stderr, "Error: "
+				(void) printf("Error: "
 				    "multiple primary nets: %s %s\n",
 				    primary, net);
 				return (-1);
@@ -242,8 +240,7 @@ add_nets(int *argc, char **argv)
 		if (snprintf(slotconf, sizeof (slotconf),
 		    "%d:%d,virtio-net-viona,%s", pcislot, pcifn, net) >=
 		    sizeof (slotconf)) {
-			(void) fprintf(stderr, "Error: net '%s' too long\n",
-			    net);
+			(void) printf("Error: net '%s' too long\n", net);
 			return (-1);
 		}
 
@@ -315,7 +312,7 @@ main(int argc, char **argv)
 	init_debug();
 
 	if (argc != 3) {
-		(void) fprintf(stderr, "Error: bhyve boot program called with "
+		(void) printf("Error: bhyve boot program called with "
 		    "%d args, expecting 2\n", argc - 1);
 		return (1);
 	}
@@ -340,27 +337,25 @@ main(int argc, char **argv)
 	 */
 	if (nvlist_alloc(&nvl, NV_UNIQUE_NAME, 0) != 0 ||
 	    nvlist_add_string_array(nvl, "zhyve_args", zhargv, zhargc) != 0) {
-		(void) fprintf(stderr, "Error: failed to create nvlist: %s\n",
+		(void) printf("Error: failed to create nvlist: %s\n",
 		    strerror(errno));
 		return (1);
 	}
 
 	if (nvlist_pack(nvl, &nvbuf, &nvbuflen, NV_ENCODE_NATIVE, 0) != 0) {
-		(void) fprintf(stderr, "Error: failed to pack nvlist\n");
+		(void) printf("Error: failed to pack nvlist\n");
 		return (1);
 	}
 
 	if (snprintf(zoneroot, sizeof (zoneroot), "%s/root", zonepath) >=
 	    sizeof (zoneroot)) {
-		(void) fprintf(stderr, "Error: zonepath '%s' too long\n",
-		    zonepath);
+		(void) printf("Error: zonepath '%s' too long\n", zonepath);
 		return (1);
 	}
 
 	if ((zrfd = open(zoneroot, O_RDONLY|O_SEARCH)) < 0) {
-		(void) fprintf(stderr,
-		    "Error: cannot open zone root '%s': %s\n", zoneroot,
-		    strerror(errno));
+		(void) printf("Error: cannot open zone root '%s': %s\n",
+		    zoneroot, strerror(errno));
 		return (1);
 	}
 
@@ -371,19 +366,19 @@ main(int argc, char **argv)
 	 * system that was just mounted and no zone code has run yet.
 	 */
 	if (mkdirat(zrfd, BHYVE_DIR, 0700) != 0 && errno != EEXIST) {
-		(void) fprintf(stderr, "Error: failed to create directory %s "
+		(void) printf("Error: failed to create directory %s "
 		    "in zone: %s\n" BHYVE_DIR, strerror(errno));
 		return (1);
 	}
 
 	fd = openat(zrfd, BHYVE_ARGS_FILE, O_WRONLY|O_CREAT|O_EXCL, 0600);
 	if (fd < 0) {
-		(void) fprintf(stderr, "Error: failed to create file %s "
-		    "in zone: %s\n" BHYVE_ARGS_FILE, strerror(errno));
+		(void) printf("Error: failed to create file %s in zone: %s\n",
+		    BHYVE_ARGS_FILE, strerror(errno));
 		return (1);
 	}
 	if (full_write(fd, nvbuf, nvbuflen) != 0) {
-		(void) fprintf(stderr, "Error: failed to write %s: %s\n",
+		(void) printf("Error: failed to write %s: %s\n",
 		    BHYVE_ARGS_FILE, strerror(errno));
 		(void) unlink(BHYVE_ARGS_FILE);
 		return (1);
