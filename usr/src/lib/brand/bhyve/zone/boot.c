@@ -87,6 +87,7 @@ char *
 get_zcfg_var(char *rsrc, char *inst, char *prop)
 {
 	char envvar[MAXNAMELEN];
+	char *ret;
 
 	if (prop == NULL) {
 		if (snprintf(envvar, sizeof (envvar), "_ZONECFG_%s_%s",
@@ -100,7 +101,10 @@ get_zcfg_var(char *rsrc, char *inst, char *prop)
 		}
 	}
 
-	return (getenv(envvar));
+	ret = getenv(envvar);
+	(void) printf("%s: '%s=%s'\n", __func__, envvar, ret ? ret : "<null>");
+
+	return (ret);
 }
 
 int
@@ -144,7 +148,8 @@ add_ram(int *argc, char **argv)
 }
 
 int
-add_disks(int *argc, char **argv) {
+add_disks(int *argc, char **argv)
+{
 	char *disks;
 	char *disk;
 	char *lasts;
@@ -168,14 +173,14 @@ add_disks(int *argc, char **argv) {
 			continue;
 		}
 
-		if ((path = get_zcfg_var("disk", disk, "path")) == NULL) {
+		if ((path = get_zcfg_var("device", disk, "path")) == NULL) {
 			(void) fprintf(stderr, "Error: disk %s has no path\n",
 			    disk);
 			return (-1);
 		}
 
 		/* Allow at most one "primary" disk */
-		val = get_zcfg_var("disk", disk, "boot");
+		val = get_zcfg_var("device", disk, "boot");
 		if (val != NULL && strcmp(val, "true") == 0) {
 			if (boot != NULL) {
 				(void) fprintf(stderr, "Error: "
@@ -209,7 +214,8 @@ add_disks(int *argc, char **argv) {
 }
 
 int
-add_nets(int *argc, char **argv) {
+add_nets(int *argc, char **argv)
+{
 	char *nets;
 	char *net;
 	char *lasts;
@@ -272,7 +278,8 @@ add_nets(int *argc, char **argv) {
  * case because it is being written to tmpfs.
  */
 int
-full_write(int fd, char *buf, size_t buflen) {
+full_write(int fd, char *buf, size_t buflen)
+{
 	ssize_t nwritten;
 	size_t totwritten = 0;
 
@@ -308,7 +315,7 @@ main(int argc, char **argv)
 	char *nvbuf;
 	size_t nvbuflen;
 
-	if (argc != 3) {
+	if (argc != 2) {
 		(void) fprintf(stderr, "Error: bhyve boot program called with "
 		    "%d args, expecting 1", argc - 1);
 		return (1);
