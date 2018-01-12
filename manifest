@@ -5113,6 +5113,7 @@ f usr/lib/brand/bhyve/boot 0555 root sys
 f usr/lib/brand/bhyve/config.xml 0444 root sys
 f usr/lib/brand/bhyve/halt 0555 root sys
 f usr/lib/brand/bhyve/platform.xml 0444 root sys
+f usr/lib/brand/bhyve/statechange 0555 root sys
 d usr/lib/brand/bhyve/root 0555 root sys
 d usr/lib/brand/bhyve/root/contract 0555 root sys
 d usr/lib/brand/bhyve/root/dev 0555 root sys

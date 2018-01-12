@@ -10,24 +10,26 @@ include $(SRC)/cmd/Makefile.cmd
 include ../Makefile.bhyve
 include $(SRC)/cmd/Makefile.cmd.64
 
-PROG1=		boot
-OBJS1=		boot.o
-PROGS=		$(PROG1)
-OBJS=		$(OBJS1)
-CLEANFILES=	$(PROG1) $(OBJS1)
-$(PROG1):=	LDLIBS += -lnvpair
+PROGS =		statechange
 
-PROG2=		halt
-OBJS2=		halt.o
+PROG1 =		boot
+OBJS1 =		boot.o
+PROGS +=	$(PROG1)
+OBJS +=		$(OBJS1)
+CLEANFILES +=	$(PROG1) $(OBJS1)
+$(PROG1) :=	LDLIBS += -lnvpair
+
+PROG2 =		halt
+OBJS2 =		halt.o
 PROGS +=	$(PROG2)
 OBJS +=		$(OBJS2)
 CLEANFILES +=	$(PROG2) $(OBJS2)
-$(PROG2):=	LDLIBS += -lvmmapi
+$(PROG2) :=	LDLIBS += -lvmmapi
 
 
-TEMPLATES=	SYSbhyve.xml
-XMLDOCS=	config.xml platform.xml
-CLOBBERFILES=	$(ROOTXMLDOCS) $(ROOTTEMPLATES) $(ROOTPROGS)
+TEMPLATES =	SYSbhyve.xml
+XMLDOCS =	config.xml platform.xml
+CLOBBERFILES =	$(ROOTXMLDOCS) $(ROOTTEMPLATES) $(ROOTPROGS)
 
 all: $(PROGS)
 

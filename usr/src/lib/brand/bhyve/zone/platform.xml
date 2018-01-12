@@ -16,8 +16,12 @@
 <platform name="bhyve" allow-exclusive-ip="true">
 
 	<!-- Global filesystems to mount when booting the zone -->
+	<!--
+	    XXX-mg zoneadmd needs a fix for this.
+	    When done, statechange isn't needed.
 	<global_mount special="/usr/lib/brand/bhyve/root" directory="/"
 	    opt="ro,nodevices" type="lofs" />
+	-->
 	<global_mount special="/dev" directory="/dev" type="dev"
 	    opt="attrdir=%R/root/dev"/>
 	<global_mount special="/lib/brand/bhyve/root/lib" directory="/lib"

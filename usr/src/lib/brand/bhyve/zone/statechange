@@ -1,0 +1,31 @@
+#! /bin/ksh
+
+# This is fast and sloppy.  It will be removed in favor of proper handling of
+# mounting of the zone root in zoneadmd.
+
+exec >/tmp/statechange.log 2>&1
+echo =========================================================================
+PS4='$$+ '; set -x
+
+export PATH=/usr/sbin:/usr/bin
+
+subcommand=$1
+zone=$2
+zonepath=$3
+state=$4
+cmd=$5
+
+case $subcommand in
+pre)
+	if [[ $cmd == 0 ]]; then
+		mount -F lofs /usr/lib/brand/bhyve/root $zonepath/root
+	fi
+	;;
+post)
+	if [[ $cmd == 4 ]]; then
+		umount $zonepath/root
+	fi
+	;;
+esac
+
+exit 0

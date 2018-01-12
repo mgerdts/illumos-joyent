@@ -21,7 +21,7 @@
 
 /*
  * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright 2017, Joyent Inc.
+ * Copyright 2018, Joyent Inc.
  * Copyright (c) 2015, 2016 by Delphix. All rights reserved.
  */
 
@@ -1051,9 +1051,9 @@ valid_mount_path(zlog_t *zlogp, const char *rootpath, const char *spec,
 
 	/*
 	 * Sanity check the target mount point path.
-	 * It must be a non-null string that starts with a '/'.
+	 * If it is a null string, we are mounting the zone root.
 	 */
-	if (dir[0] != '/') {
+	if (dir[0] != '\0' && dir[0] != '/') {
 		/* Something went wrong. */
 		zerror(zlogp, B_FALSE, "invalid mount directory, "
 		    "type: \"%s\", special: \"%s\", dir: \"%s\"",
@@ -4774,8 +4774,12 @@ vplat_create(zlog_t *zlogp, zone_mnt_t mount_cmd, zoneid_t zone_did)
 	 */
 	if (duplicate_zone_root(zlogp, rootpath))
 		goto error;
+#if 0	/* XXX-mg: broken with lofs on zoneroot */
 	if (duplicate_reachable_path(zlogp, rootpath))
 		goto error;
+#else
+	(void) duplicate_reachable_path(zlogp, rootpath);
+#endif
 
 	if (ALT_MOUNT(mount_cmd)) {
 		root_to_lu(zlogp, rootpath, sizeof (rootpath), B_TRUE);

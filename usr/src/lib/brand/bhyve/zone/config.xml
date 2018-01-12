@@ -25,7 +25,7 @@
 	<install>/usr/lib/brand/bhyve/binstall -z %z -R %R</install>
 	<installopts>R:t:U:q:z:</installopts>
 	<boot>/usr/lib/brand/bhyve/boot %z</boot>
-	<halt>/usr/lib/brand/bhyve/halt %z</halt>
+	<halt />
 	<verify_cfg />
 	<verify_adm />
 	<postclone />
@@ -34,8 +34,8 @@
 	<detach />
 	<clone>/usr/lib/brand/bhyve/clone -z %z -R %R %Z</clone>
 	<uninstall>/usr/lib/brand/bhyve/uninstall -z %z -R %R</uninstall>
-	<prestatechange />
-	<poststatechange />
+	<prestatechange>/usr/lib/brand/bhyve/statechange pre %z %R</prestatechange>
+	<poststatechange>/usr/lib/brand/bhyve/statechange post %z %R</poststatechange>
 
 	<privilege set="default" name="net_rawaccess" ip-type="exclusive" />
 	<privilege set="default" name="proc_clock_highres" />
