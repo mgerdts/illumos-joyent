@@ -866,6 +866,7 @@ setup_subproc_env(boolean_t debug)
 	if ((res = zonecfg_setdevent(snap_hndl)) != Z_OK)
 		goto done;
 
+	dev_resources[0] = '\0';
 	while (zonecfg_getdevent(snap_hndl, &dtab) == Z_OK) {
 		struct zone_res_attrtab *rap;
 		char *match;
