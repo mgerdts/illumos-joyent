@@ -28,7 +28,12 @@
 	    opt="ro,nodevices" type="lofs" />
 
 	<!-- Local filesystems to mount when booting the zone -->
-	<mount special="swap" directory="/var/run" type="tmpfs" />
+	<mount special="swap" directory="/var/run" type="tmpfs"
+	    opt="size=50m"/>
+
+	<!-- Needed by dlmgmtd -->
+	<mount special="swap" directory="/etc/svc/volatile" type="tmpfs"
+	    opt="size=10m" />
 
 	<!-- Devices to create under /dev -->
 	<device match="arp" />

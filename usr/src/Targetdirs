@@ -62,6 +62,9 @@ i386_DIRS= \
 	/usr/lib/brand/bhyve \
 	/usr/lib/brand/bhyve/root \
 	/usr/lib/brand/bhyve/root/dev \
+	/usr/lib/brand/bhyve/root/etc \
+	/usr/lib/brand/bhyve/root/etc/svc \
+	/usr/lib/brand/bhyve/root/etc/svc/volatile \
 	/usr/lib/brand/bhyve/root/lib \
 	/usr/lib/brand/bhyve/root/system \
 	/usr/lib/brand/bhyve/root/contract \

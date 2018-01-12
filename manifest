@@ -5117,6 +5117,9 @@ f usr/lib/brand/bhyve/statechange 0555 root sys
 d usr/lib/brand/bhyve/root 0555 root sys
 d usr/lib/brand/bhyve/root/contract 0555 root sys
 d usr/lib/brand/bhyve/root/dev 0555 root sys
+d usr/lib/brand/bhyve/root/etc 0555 root sys
+d usr/lib/brand/bhyve/root/etc/svc 0555 root sys
+d usr/lib/brand/bhyve/root/etc/svc/volatile 0755 root sys
 d usr/lib/brand/bhyve/root/lib 0555 root sys
 d usr/lib/brand/bhyve/root/system 0555 root sys
 d usr/lib/brand/bhyve/root/usr 0555 root sys
@@ -5125,7 +5128,7 @@ d usr/lib/brand/bhyve/root/usr/lib/amd64 0555 root sys
 d usr/lib/brand/bhyve/root/usr/sbin 0555 root sys
 h usr/lib/brand/bhyve/root/usr/sbin/zhyve=usr/sbin/amd64/bhyve
 d usr/lib/brand/bhyve/root/var 0555 root sys
-d usr/lib/brand/bhyve/root/var/run 0555 root sys
+d usr/lib/brand/bhyve/root/var/run 0755 root sys
 d usr/lib/brand/lx 0755 root bin
 s usr/lib/brand/lx/64=amd64
 d usr/lib/brand/lx/amd64 0755 root bin
