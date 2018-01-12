@@ -5122,14 +5122,13 @@ d usr/lib/brand/bhyve/root/etc 0555 root sys
 d usr/lib/brand/bhyve/root/etc/svc 0555 root sys
 d usr/lib/brand/bhyve/root/etc/svc/volatile 0755 root sys
 d usr/lib/brand/bhyve/root/lib 0555 root sys
-s usr/lib/brand/bhyve/root/lib/64=amd64
-d usr/lib/brand/bhyve/root/lib/amd64 0555 root sys
 d usr/lib/brand/bhyve/root/system 0555 root sys
 d usr/lib/brand/bhyve/root/usr 0555 root sys
-d usr/lib/brand/bhyve/root/usr/lib 0555 root sys
-d usr/lib/brand/bhyve/root/usr/lib/amd64 0555 root sys
 d usr/lib/brand/bhyve/root/usr/sbin 0555 root sys
 h usr/lib/brand/bhyve/root/usr/sbin/zhyve=usr/sbin/amd64/bhyve
+d usr/lib/brand/bhyve/root/usr/share 0555 root sys
+d usr/lib/brand/bhyve/root/usr/share/bhyve 0555 root sys
+h usr/lib/brand/bhyve/root/usr/share/bhyve/BHYVE_UEFI.fd=usr/share/bhyve/BHYVE_UEFI.fd
 d usr/lib/brand/bhyve/root/var 0555 root sys
 d usr/lib/brand/bhyve/root/var/run 0755 root sys
 d usr/lib/brand/lx 0755 root bin
@@ -10658,6 +10657,8 @@ d usr/sfw 0755 root bin
 d usr/sfw/bin 0755 root bin
 d usr/sfw/bin/amd64 0755 root bin
 d usr/share 0755 root sys
+d usr/share/bhyve 0755 root sys
+f usr/share/bhyve/BHYVE_UEFI.fd 0444 root sys
 d usr/share/hwdata 0755 root sys
 f usr/share/hwdata/pci.ids 0444 root bin
 d usr/share/lib 0755 root sys

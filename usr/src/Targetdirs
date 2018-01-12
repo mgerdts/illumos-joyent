@@ -71,13 +71,16 @@ i386_DIRS= \
 	/usr/lib/brand/bhyve/root/usr \
 	/usr/lib/brand/bhyve/root/usr/lib \
 	/usr/lib/brand/bhyve/root/usr/sbin \
+	/usr/lib/brand/bhyve/root/usr/share \
+	/usr/lib/brand/bhyve/root/usr/share/bhyve \
 	/usr/lib/brand/bhyve/root/var \
 	/usr/lib/brand/bhyve/root/var/run \
 	/usr/lib/brand/lx \
 	/usr/lib/brand/lx/amd64 \
 	/usr/lib/brand/lx/distros \
 	/usr/lib/xen \
-	/usr/lib/xen/bin
+	/usr/lib/xen/bin \
+	/usr/share/bhyve
 
 sparc_DIRS= \
 	/usr/lib/ldoms
