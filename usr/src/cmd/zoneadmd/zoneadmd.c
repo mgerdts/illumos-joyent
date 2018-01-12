@@ -883,6 +883,12 @@ setup_subproc_env(boolean_t debug)
 			    rap->zone_res_attr_name, rap->zone_res_attr_value);
 	}
 
+	for (char *p = dev_resources; *p != '\0'; p++) {
+		if (*p == '-') {
+			*p = '_';
+		}
+	}
+
 	(void) setenv("_ZONECFG_device_resources", dev_resources, 1);
 
 	(void) zonecfg_enddevent(snap_hndl);
