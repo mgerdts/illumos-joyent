@@ -84,6 +84,7 @@ full_read(int fd, char *buf, size_t len)
  * by path.  On success, 0 is returned and the members of *argv reference memory
  * allocated from an nvlist.  On failure, -1 is returned.
  */
+
 static int
 parse_options_file(const char *path, uint *argcp, char ***argvp)
 {
@@ -98,7 +99,7 @@ parse_options_file(const char *path, uint *argcp, char ***argvp)
 	    (buf = malloc(stbuf.st_size)) == NULL ||
 	    full_read(fd, buf, stbuf.st_size) != 0 ||
 	    nvlist_unpack(buf, stbuf.st_size, &nvl, 0) != 0 ||
-	    nvlist_lookup_string_array(nvl, "zyhve_args", argvp, argcp) != 0) {
+	    nvlist_lookup_string_array(nvl, "zhyve_args", argvp, argcp) != 0) {
 		nvlist_free(nvl);
 		ret = -1;
 	} else {
