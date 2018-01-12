@@ -20,6 +20,17 @@
 
 #define	ZHYVE_CMD_FILE	"/var/run/bhyve/zhyve.cmd"
 
+/*
+ * This log file is on tmpfs and does not survive halt.  For startup failures:
+ *
+ *   dtrace -wn 'syscall:::entry
+ *       /execname == "zhyve"/
+ *       { stop(); system("truss -t write -wall -f -p %d\n", pid); exit(0);}'
+ *
+ * If there's more than one zhyve instance on the zone, also filter on zonename.
+ */
+#define	ZHYVE_LOG_FILE	"/var/run/bhyve/zhyve.log"
+
 extern int bhyve_main(int, char **);
 const char *cmdname;
 
@@ -29,7 +40,7 @@ const char *cmdname;
 static void
 get_cmdname(const char *path)
 {
-	cmdname = strchr(path, '/');
+	cmdname = strrchr(path, '/');
 	if (cmdname == NULL) {
 		cmdname = path;
 		return;
@@ -105,10 +116,25 @@ main(int argc, char **argv)
 {
 	uint zargc;
 	char **zargv;
+	int fd;
 
 	get_cmdname(argv[0]);
 	if (strcmp(cmdname, "zhyve") != 0) {
 		return (bhyve_main(argc, argv));
+	}
+
+	fd = open("/dev/null", O_WRONLY);
+	assert(fd >= 0);
+	if (fd != STDIN_FILENO) {
+		(void) dup2(fd, STDIN_FILENO);
+		(void) close(fd);
+	}
+	fd = open(ZHYVE_LOG_FILE, O_WRONLY|O_CREAT, 0644);
+	assert(fd >= 0);
+	(void) dup2(fd, STDOUT_FILENO);
+	(void) dup2(fd, STDERR_FILENO);
+	if (fd != STDOUT_FILENO && fd != STDERR_FILENO) {
+		(void) close(fd);
 	}
 
 	if (parse_options_file(ZHYVE_CMD_FILE, &zargc, &zargv) != 0) {
