@@ -52,7 +52,7 @@
 
 /* These paths are relative to the zone root. */
 #define	BHYVE_DIR		"var/run/bhyve"
-#define	BHYVE_ARGS_FILE		BHYVE_DIR "zhyve.args"
+#define	BHYVE_ARGS_FILE		BHYVE_DIR "/" "zhyve.cmd"
 #define ROMFILE			"usr/share/bhyve/BHYVE_UEFI.fd"
 #define ZH_MAXARGS		100
 
