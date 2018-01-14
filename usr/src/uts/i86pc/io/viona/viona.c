@@ -166,12 +166,6 @@ struct virtio_net_hdr {
 };
 #pragma pack()
 
-enum viona_vq_id {
-	VIONA_VQ_RX = 0,
-	VIONA_VQ_TX = 1,
-	VIONA_VQ_MAX = 2
-};
-
 struct viona_link;
 typedef struct viona_link viona_link_t;
 struct viona_desb;
@@ -200,10 +194,13 @@ typedef struct viona_vring {
 	kmutex_t	vr_lock;
 	kcondvar_t	vr_cv;
 	uint_t		vr_state;
-	uint_t		vr_intr_enabled;
 	uint_t		vr_xfer_outstanding;
 	kthread_t	*vr_worker_thread;
 	viona_desb_t	*vr_desb;
+
+	uint_t		vr_intr_enabled;
+	uint64_t	vr_msi_addr;
+	uint64_t	vr_msi_msg;
 
 	/* Internal ring-related state */
 	kmutex_t	vr_a_mutex;	/* sync consumers of 'avail' */
@@ -300,10 +297,11 @@ static int viona_ioc_set_notify_ioport(viona_link_t *, uint_t);
 static int viona_ioc_ring_init(viona_link_t *, void *, int);
 static int viona_ioc_ring_reset(viona_link_t *, uint_t);
 static int viona_ioc_ring_kick(viona_link_t *, uint_t);
-static int viona_ioc_ring_intr_clear(viona_link_t *link, uint_t);
+static int viona_ioc_ring_set_msi(viona_link_t *, void *, int);
+static int viona_ioc_ring_intr_clear(viona_link_t *, uint_t);
+static int viona_ioc_intr_poll(viona_link_t *, void *, int, int *);
 
-static void viona_intr_rx(viona_link_t *);
-static void viona_intr_tx(viona_link_t *);
+static void viona_intr_ring(viona_vring_t *);
 
 static void viona_desb_release(viona_desb_t *);
 static void viona_rx(void *, mac_resource_handle_t, mblk_t *, boolean_t);
@@ -654,8 +652,14 @@ viona_ioctl(dev_t dev, int cmd, intptr_t data, int md, cred_t *cr, int *rv)
 	case VNA_IOC_RING_KICK:
 		err = viona_ioc_ring_kick(link, (uint_t)data);
 		break;
-	case VNA_IOC_INTR_CLR:
+	case VNA_IOC_RING_SET_MSI:
+		err = viona_ioc_ring_set_msi(link, dptr, md);
+		break;
+	case VNA_IOC_RING_INTR_CLR:
 		err = viona_ioc_ring_intr_clear(link, (uint_t)data);
+		break;
+	case VNA_IOC_INTR_POLL:
+		err = viona_ioc_intr_poll(link, dptr, md, rv);
 		break;
 	case VNA_IOC_SET_NOTIFY_IOP:
 		err = viona_ioc_set_notify_ioport(link, (uint_t)data);
@@ -688,13 +692,13 @@ viona_chpoll(dev_t dev, short events, int anyyet, short *reventsp,
 	}
 
 	*reventsp = 0;
-	if (link->l_vrings[VIONA_VQ_RX].vr_intr_enabled != 0 &&
-	    (events & POLLIN) != 0) {
-		*reventsp |= POLLIN;
-	}
-	if (link->l_vrings[VIONA_VQ_TX].vr_intr_enabled != 0 &&
-	    (events & POLLOUT) != 0) {
-		*reventsp |= POLLOUT;
+	if ((events & POLLRDBAND) != 0) {
+		for (uint_t i = 0; i < VIONA_VQ_MAX; i++) {
+			if (link->l_vrings[i].vr_intr_enabled != 0) {
+				*reventsp |= POLLRDBAND;
+				break;
+			}
+		}
 	}
 	if ((*reventsp == 0 && !anyyet) || (events & POLLET)) {
 		*phpp = &link->l_pollhead;
@@ -957,6 +961,10 @@ viona_ioc_ring_init(viona_link_t *link, void *udata, int md)
 		ring->vr_desb = desb;
 	}
 
+	/* Zero out MSI-X configuration */
+	ring->vr_msi_addr = 0;
+	ring->vr_msi_msg = 0;
+
 	t = viona_create_worker(ring);
 	if (t == NULL) {
 		err = ENOMEM;
@@ -1045,6 +1053,28 @@ viona_ioc_ring_kick(viona_link_t *link, uint_t idx)
 	mutex_exit(&ring->vr_lock);
 
 	return (err);
+}
+
+static int
+viona_ioc_ring_set_msi(viona_link_t *link, void *data, int md)
+{
+	vioc_ring_msi_t vrm;
+	viona_vring_t *ring;
+
+	if (ddi_copyin(data, &vrm, sizeof (vrm), md) != 0) {
+		return (EFAULT);
+	}
+	if (vrm.rm_index >= VIONA_VQ_MAX) {
+		return (EINVAL);
+	}
+
+	ring = &link->l_vrings[vrm.rm_index];
+	mutex_enter(&ring->vr_lock);
+	ring->vr_msi_addr = vrm.rm_addr;
+	ring->vr_msi_msg = vrm.rm_msg;
+	mutex_exit(&ring->vr_lock);
+
+	return (0);
 }
 
 static int
@@ -1164,7 +1194,7 @@ viona_worker_tx(viona_vring_t *ring, viona_link_t *link)
 		VIONA_PROBE2(tx, viona_link_t *, link, uint_t, ntx);
 		ntx = 0;
 		if ((link->l_features & VIRTIO_F_RING_NOTIFY_ON_EMPTY) != 0) {
-			viona_intr_tx(link);
+			viona_intr_ring(ring);
 		}
 
 		mutex_enter(&ring->vr_lock);
@@ -1215,7 +1245,7 @@ viona_worker(void *arg)
 	} else if (ring == &link->l_vrings[VIONA_VQ_TX]) {
 		viona_worker_tx(ring, link);
 	} else {
-		panic("unexpected ring: %p", ring);
+		panic("unexpected ring: %p", (void *)ring);
 	}
 
 cleanup:
@@ -1264,6 +1294,28 @@ viona_ioc_ring_intr_clear(viona_link_t *link, uint_t idx)
 	}
 
 	link->l_vrings[idx].vr_intr_enabled = 0;
+	return (0);
+}
+
+static int
+viona_ioc_intr_poll(viona_link_t *link, void *udata, int md, int *rv)
+{
+	uint_t cnt = 0;
+	vioc_intr_poll_t vip;
+
+	for (uint_t i = 0; i < VIONA_VQ_MAX; i++) {
+		uint_t val = link->l_vrings[i].vr_intr_enabled;
+
+		vip.vip_status[i] = val;
+		if (val != 0) {
+			cnt++;
+		}
+	}
+
+	if (ddi_copyout(&vip, udata, sizeof (vip), md) != 0) {
+		return (EFAULT);
+	}
+	*rv = (int)cnt;
 	return (0);
 }
 
@@ -1426,22 +1478,23 @@ vq_pushchain_mrgrx(viona_vring_t *ring, int num_bufs, used_elem_t *elem)
 }
 
 static void
-viona_intr_rx(viona_link_t *link)
+viona_intr_ring(viona_vring_t *ring)
 {
-	viona_vring_t *ring = &link->l_vrings[VIONA_VQ_RX];
+	uint64_t addr;
 
-	if (atomic_cas_uint(&ring->vr_intr_enabled, 0, 1) == 0) {
-		pollwakeup(&link->l_pollhead, POLLIN);
+	mutex_enter(&ring->vr_lock);
+	/* Deliver the interrupt directly, if so configured. */
+	if ((addr = ring->vr_msi_addr) != 0) {
+		uint64_t msg = ring->vr_msi_msg;
+
+		mutex_exit(&ring->vr_lock);
+		(void) vmm_drv_msi(ring->vr_link->l_vm_hold, addr, msg);
+		return;
 	}
-}
-
-static void
-viona_intr_tx(viona_link_t *link)
-{
-	viona_vring_t *ring = &link->l_vrings[VIONA_VQ_TX];
+	mutex_exit(&ring->vr_lock);
 
 	if (atomic_cas_uint(&ring->vr_intr_enabled, 0, 1) == 0) {
-		pollwakeup(&link->l_pollhead, POLLOUT);
+		pollwakeup(&ring->vr_link->l_pollhead, POLLRDBAND);
 	}
 }
 
@@ -1763,7 +1816,7 @@ viona_rx(void *arg, mac_resource_handle_t mrh, mblk_t *mp, boolean_t loopback)
 	}
 
 	if ((*ring->vr_avail_flags & VRING_AVAIL_F_NO_INTERRUPT) == 0) {
-		viona_intr_rx(link);
+		viona_intr_ring(ring);
 	}
 
 	/* Free successfully received frames */
@@ -1787,12 +1840,10 @@ viona_rx(void *arg, mac_resource_handle_t mrh, mblk_t *mp, boolean_t loopback)
 static void
 viona_tx_done(viona_vring_t *ring, uint32_t len, uint16_t cookie)
 {
-	viona_link_t *link = ring->vr_link;
-
 	vq_pushchain(ring, len, cookie);
 
 	if ((*ring->vr_avail_flags & VRING_AVAIL_F_NO_INTERRUPT) == 0) {
-		viona_intr_tx(link);
+		viona_intr_ring(ring);
 	}
 }
 

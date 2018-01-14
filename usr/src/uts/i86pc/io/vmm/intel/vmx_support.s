@@ -27,18 +27,12 @@
  * $FreeBSD$
  */
 
-#include <machine/asmacros.h>
+#include <sys/asm_linkage.h>
+#include <sys/segments.h>
 
 /* Porting note: This is named 'vmx_support.S' upstream. */
-#ifndef __FreeBSD__
-/* Cloned from sys/asm_linkage.h */
-#define ALTENTRY(x)		\
-	.globl	x;		\
-	.type	x, @function;	\
-x:
 
 
-#endif /* __FreeBSD__ */
 
 #if defined(lint)
 
@@ -112,7 +106,7 @@ vmx_enter_guest(struct vmxctx *ctx, struct vmx *vmx, int launched)
  * vmx_enter_guest(struct vmxctx *vmxctx, int launched)
  * Interrupts must be disabled on entry.
  */
-ENTRY(vmx_enter_guest)
+ENTRY_NP(vmx_enter_guest)
 	pushq	%rbp
 	movq	%rsp, %rbp
 	subq	$VMXSTKSIZE, %rsp
@@ -225,7 +219,7 @@ inst_error:
  * be used by C code when setting up the VMCS.
  * The VMCS-restored %rsp points to the struct vmxctx
  */
-	ALIGN_TEXT
+.align	ASM_ENTRY_ALIGN;
 ALTENTRY(vmx_exit_guest)
 	/*
 	 * Save guest state that is not automatically saved in the vmcs.
@@ -273,30 +267,27 @@ ALTENTRY(vmx_exit_guest)
 	addq	$VMXSTKSIZE, %rsp
 	popq	%rbp
 	ret
-END(vmx_enter_guest)
+SET_SIZE(vmx_enter_guest)
 
-#ifdef __FreeBSD__
 /*
  * %rdi = interrupt handler entry point
  *
  * Calling sequence described in the "Instruction Set Reference" for the "INT"
  * instruction in Intel SDM, Vol 2.
  */
-ENTRY(vmx_call_isr)
-	VENTER
-	mov	%rsp, %r11			/* save %rsp */
-	and	$~0xf, %rsp			/* align on 16-byte boundary */
-	pushq	$KERNEL_SS			/* %ss */
-	pushq	%r11				/* %rsp */
-	pushfq					/* %rflags */
-	pushq	$KERNEL_CS			/* %cs */
-	cli					/* disable interrupts */
-	callq	*%rdi				/* push %rip and call isr */
-	VLEAVE
+ENTRY_NP(vmx_call_isr)
+	pushq	%rbp
+	movq	%rsp, %rbp
+	movq	%rsp, %r11
+	andq	$~0xf, %rsp	/* align stack */
+	pushq	$KDS_SEL	/* %ss */
+	pushq	%r11		/* %rsp */
+	pushfq			/* %rflags */
+	pushq	$KCS_SEL	/* %cs */
+	cli
+	call	*%rdi		/* %rip (and call) */
+	popq	%rbp
 	ret
-END(vmx_call_isr)
-#endif /* __FreeBSD__ */
-
-
+SET_SIZE(vmx_call_isr)
 
 #endif /* lint */

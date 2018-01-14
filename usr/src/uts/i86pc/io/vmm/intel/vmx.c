@@ -93,6 +93,7 @@ __FBSDID("$FreeBSD$");
 	(PROCBASED_INT_WINDOW_EXITING	|				\
 	 PROCBASED_NMI_WINDOW_EXITING)
 
+#ifdef __FreeBSD__
 #define	PROCBASED_CTLS_ONE_SETTING 					\
 	(PROCBASED_SECONDARY_CONTROLS	|				\
 	 PROCBASED_MWAIT_EXITING	|				\
@@ -102,6 +103,20 @@ __FBSDID("$FreeBSD$");
 	 PROCBASED_CTLS_WINDOW_SETTING	|				\
 	 PROCBASED_CR8_LOAD_EXITING	|				\
 	 PROCBASED_CR8_STORE_EXITING)
+#else
+/* We consider TSC offset a necessity for unsynched TSC handling */
+#define	PROCBASED_CTLS_ONE_SETTING 					\
+	(PROCBASED_SECONDARY_CONTROLS	|				\
+	 PROCBASED_TSC_OFFSET		|				\
+	 PROCBASED_MWAIT_EXITING	|				\
+	 PROCBASED_MONITOR_EXITING	|				\
+	 PROCBASED_IO_EXITING		|				\
+	 PROCBASED_MSR_BITMAPS		|				\
+	 PROCBASED_CTLS_WINDOW_SETTING	|				\
+	 PROCBASED_CR8_LOAD_EXITING	|				\
+	 PROCBASED_CR8_STORE_EXITING)
+#endif /* __FreeBSD__ */
+
 #define	PROCBASED_CTLS_ZERO_SETTING	\
 	(PROCBASED_CR3_LOAD_EXITING |	\
 	PROCBASED_CR3_STORE_EXITING |	\
@@ -110,18 +125,11 @@ __FBSDID("$FreeBSD$");
 #define	PROCBASED_CTLS2_ONE_SETTING	PROCBASED2_ENABLE_EPT
 #define	PROCBASED_CTLS2_ZERO_SETTING	0
 
-#ifdef __FreeBSD__
 #define	VM_EXIT_CTLS_ONE_SETTING					\
 	(VM_EXIT_HOST_LMA			|			\
 	VM_EXIT_SAVE_EFER			|			\
 	VM_EXIT_LOAD_EFER			|			\
 	VM_EXIT_ACKNOWLEDGE_INTERRUPT)
-#else
-#define	VM_EXIT_CTLS_ONE_SETTING					\
-	(VM_EXIT_HOST_LMA			|			\
-	VM_EXIT_SAVE_EFER			|			\
-	VM_EXIT_LOAD_EFER)
-#endif /* __FreeBSD__ */
 
 #define	VM_EXIT_CTLS_ZERO_SETTING	VM_EXIT_SAVE_DEBUG_CONTROLS
 
@@ -206,18 +214,12 @@ static u_int vpid_alloc_failed;
 SYSCTL_UINT(_hw_vmm_vmx, OID_AUTO, vpid_alloc_failed, CTLFLAG_RD,
 	    &vpid_alloc_failed, 0, NULL);
 
-#ifdef __FreeBSD__
 /*
  * Use the last page below 4GB as the APIC access address. This address is
  * occupied by the boot firmware so it is guaranteed that it will not conflict
  * with a page in system memory.
  */
 #define	APIC_ACCESS_ADDRESS	0xFFFFF000
-#else
-static void *vmx_apic_access_vaddr;
-static uintptr_t vmx_apic_access_paddr;
-#define	APIC_ACCESS_ADDRESS	vmx_apic_access_paddr
-#endif /* __FreeBSD__ */
 
 static int vmx_getdesc(void *arg, int vcpu, int reg, struct seg_desc *desc);
 static int vmx_getreg(void *arg, int vcpu, int reg, uint64_t *retval);
@@ -344,8 +346,6 @@ exit_reason_to_str(int reason)
 }
 #endif	/* KTR */
 
-#ifdef __FreeBSD__
-/* XXXJOY: This was previous masked out, still dangerous? */
 static int
 vmx_allow_x2apic_msrs(struct vmx *vmx)
 {
@@ -393,7 +393,6 @@ vmx_allow_x2apic_msrs(struct vmx *vmx)
 
 	return (error);
 }
-#endif
 
 u_long
 vmx_fix_cr0(u_long cr0)
@@ -517,14 +516,6 @@ vmx_cleanup(void)
 {
 	if (pirvec >= 0)
 		lapic_ipi_free(pirvec);
-
-#ifndef __FreeBSD__
-	/* Clean up APIC_ACCESS_ADDRESS page */
-	if (vmx_apic_access_paddr != 0) {
-		vmx_apic_access_paddr = 0;
-		kmem_free(vmx_apic_access_vaddr, PAGESIZE);
-	}
-#endif
 
 	if (vpid_unr != NULL) {
 		delete_unrhdr(vpid_unr);
@@ -719,10 +710,7 @@ vmx_init(int ipinum)
 	error = vmx_set_ctlreg(MSR_VMX_PROCBASED_CTLS2, MSR_VMX_PROCBASED_CTLS2,
 	    procbased2_vid_bits, 0, &tmp);
 	if (error == 0 && use_tpr_shadow) {
-#ifdef __FreeBSD__
-		/* XXXJOY: disabled until fixed and tested */
 		virtual_interrupt_delivery = 1;
-#endif
 		TUNABLE_INT_FETCH("hw.vmm.vmx.use_apic_vid",
 		    &virtual_interrupt_delivery);
 	}
@@ -811,11 +799,6 @@ vmx_init(int ipinum)
 	for (uint_t i = 0; i < MAXCPU; i++) {
 		vmxon_region_pa[i] = (char *)vtophys(vmxon_region[i]);
 	}
-
-	/* Allocate a physical page for the APIC_ACCESS_ADDRESS */
-	vmx_apic_access_vaddr = kmem_alloc(PAGESIZE, KM_SLEEP);
-	vmx_apic_access_paddr = vtophys(vmx_apic_access_vaddr);
-
 #endif /* __FreeBSD__ */
 
 	/* enable VMX operation */
@@ -851,7 +834,19 @@ vmx_trigger_hostintr(int vector)
 	func = ((long)gd->gd_hioffset << 16 | gd->gd_looffset);
 	vmx_call_isr(func);
 #else
-	/* XXXJOY: The host interrupt shoud have already been handled(?) */
+	uintptr_t func;
+	gate_desc_t *dp;
+
+	VERIFY(vector >= 32 && vector <= 255);
+	dp = &CPU->cpu_m.mcpu_idt[vector];
+
+	VERIFY(dp->sgd_ist == 0);
+	VERIFY(dp->sgd_p == 1);
+
+	func = (((uint64_t)dp->sgd_hi64offset << 32) |
+	    ((uint64_t)dp->sgd_hioffset << 16) |
+	    dp->sgd_looffset);
+	vmx_call_isr(func);
 #endif /* __FreeBSD__ */
 }
 
@@ -895,6 +890,15 @@ vmx_vminit(struct vm *vm, pmap_t pmap)
 	struct vmx *vmx;
 	struct vmcs *vmcs;
 	uint32_t exc_bitmap;
+
+#ifndef __FreeBSD__
+	/*
+	 * Grab an initial TSC reading to apply as an offset so the guest
+	 * TSC(s) appear to start from a zeroed value.
+	 */
+	uint64_t init_time = rdtsc();
+#endif
+
 
 	vmx = malloc(sizeof(struct vmx), M_VMX, M_WAITOK | M_ZERO);
 	if ((uintptr_t)vmx & PAGE_MASK) {
@@ -1006,6 +1010,15 @@ vmx_vminit(struct vm *vm, pmap_t pmap)
 		error += vmwrite(VMCS_MSR_BITMAP, msr_bitmap_pa);
 #endif
 		error += vmwrite(VMCS_VPID, vpid[i]);
+
+#ifndef __FreeBSD__
+		/*
+		 * Record initial TSC offset.  It will be loaded into the VMCS
+		 * during each setup for VMX entry.
+		 */
+		vmx->tsc_offset[i] = (uint64_t)(-init_time);
+		VERIFY(procbased_ctls & PROCBASED_TSC_OFFSET);
+#endif
 
 		/* exception bitmap */
 		if (vcpu_trace_exceptions(vm, i))
@@ -1176,6 +1189,30 @@ vmx_invvpid(struct vmx *vmx, int vcpu, pmap_t pmap, int running)
 	}
 }
 
+#ifndef __FreeBSD__
+/*
+ * Set the TSC adjustment, taking into account the offsets measured between
+ * host physical CPUs.  This is required even if the guest has not set a TSC
+ * offset since vCPUs inherit the TSC offset of whatever physical CPU it has
+ * migrated onto.  Without this mitigation, un-synched host TSCs will convey
+ * the appearance of TSC time-travel to the guest as its vCPUs migrate.
+ */
+static int
+vmx_apply_tsc_adjust(struct vmx *vmx, int vcpu)
+{
+	extern hrtime_t tsc_gethrtime_tick_delta(void);
+	uint64_t host_offset = (uint64_t)tsc_gethrtime_tick_delta();
+	uint64_t guest_offset = vmx->tsc_offset[vcpu];
+	int error;
+
+	ASSERT(vmx->cap[vcpu].proc_ctls & PROCBASED_TSC_OFFSET);
+
+	error = vmwrite(VMCS_TSC_OFFSET, guest_offset + host_offset);
+
+	return (error);
+}
+#endif
+
 static void
 vmx_set_pcpu_defaults(struct vmx *vmx, int vcpu, pmap_t pmap)
 {
@@ -1207,6 +1244,10 @@ vmx_set_pcpu_defaults(struct vmx *vmx, int vcpu, pmap_t pmap)
 	vmcs_write(VMCS_HOST_GDTR_BASE, vmm_get_host_gdtrbase());
 	vmcs_write(VMCS_HOST_GS_BASE, vmm_get_host_gsbase());
 	vmx_invvpid(vmx, vcpu, pmap, 1);
+
+#ifndef __FreeBSD__
+	VERIFY0(vmx_apply_tsc_adjust(vmx, vcpu));
+#endif
 }
 
 /*
@@ -1263,6 +1304,7 @@ vmx_set_tsc_offset(struct vmx *vmx, int vcpu, uint64_t offset)
 {
 	int error;
 
+#ifdef __FreeBSD__
 	if ((vmx->cap[vcpu].proc_ctls & PROCBASED_TSC_OFFSET) == 0) {
 		vmx->cap[vcpu].proc_ctls |= PROCBASED_TSC_OFFSET;
 		vmcs_write(VMCS_PRI_PROC_BASED_CTLS, vmx->cap[vcpu].proc_ctls);
@@ -1270,6 +1312,10 @@ vmx_set_tsc_offset(struct vmx *vmx, int vcpu, uint64_t offset)
 	}
 
 	error = vmwrite(VMCS_TSC_OFFSET, offset);
+#else /* __FreeBSD__ */
+	vmx->tsc_offset[vcpu] = offset;
+	error = vmx_apply_tsc_adjust(vmx, vcpu);
+#endif /* __FreeBSD__ */
 
 	return (error);
 }
@@ -3381,8 +3427,6 @@ vmx_set_tmr(struct vlapic *vlapic, int vector, bool level)
 	VMCLEAR(vmcs);
 }
 
-#ifdef __FreeBSD__
-/* XXXJOY: This was previous masked out, still dangerous? */
 static void
 vmx_enable_x2apic_mode(struct vlapic *vlapic)
 {
@@ -3425,7 +3469,6 @@ vmx_enable_x2apic_mode(struct vlapic *vlapic)
 		    __func__, error));
 	}
 }
-#endif
 
 static void
 vmx_post_intr(struct vlapic *vlapic, int hostcpu)
@@ -3551,10 +3594,7 @@ vmx_vlapic_init(void *arg, int vcpuid)
 		vlapic->ops.pending_intr = vmx_pending_intr;
 		vlapic->ops.intr_accepted = vmx_intr_accepted;
 		vlapic->ops.set_tmr = vmx_set_tmr;
-#ifdef __FreeBSD__
-		/* XXXJOY: This was previous masked out, still dangerous? */
 		vlapic->ops.enable_x2apic_mode = vmx_enable_x2apic_mode;
-#endif
 	}
 
 	if (posted_interrupts)

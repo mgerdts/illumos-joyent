@@ -119,10 +119,10 @@ rdmsr(u_int msr)
 static __inline uint64_t
 rdtsc(void)
 {
-	uint32_t low, high;
- 
-	__asm __volatile("rdtsc" : "=a" (low), "=d" (high));
-	return (low | ((uint64_t)high << 32));
+	extern hrtime_t tsc_gethrtimeunscaled_delta(void);
+
+	/* Get the TSC reading with any needed synch offset applied */
+	return ((uint64_t)tsc_gethrtimeunscaled_delta());
 }
 
 static __inline void

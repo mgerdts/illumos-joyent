@@ -121,6 +121,7 @@ struct pci_viona_softc {
 
 	uint64_t	vsc_pfn[VIONA_MAXQ];
 	uint16_t	vsc_msix_table_idx[VIONA_MAXQ];
+	boolean_t	vsc_msix_active;
 };
 #define	viona_ctx(sc)	((sc)->vsc_pi->pi_vmctx)
 
@@ -190,11 +191,12 @@ static void *
 pci_viona_poll_thread(void *param)
 {
 	struct pci_viona_softc *sc = param;
-	pollfd_t	pollset;
-	int			error;
+	pollfd_t pollset;
+	int res;
+	const int fd = sc->vsc_vnafd;
 
-	pollset.fd = sc->vsc_vnafd;
-	pollset.events = POLLIN | POLLOUT;
+	pollset.fd = fd;
+	pollset.events = POLLRDBAND;
 
 	for (;;) {
 		if (poll(&pollset, 1, -1) < 0) {
@@ -206,25 +208,22 @@ pci_viona_poll_thread(void *param)
 				break;
 			}
 		}
-		if (pollset.revents & POLLIN) {
-			pci_generate_msix(sc->vsc_pi,
-			    sc->vsc_msix_table_idx[VIONA_RXQ]);
-			error = ioctl(sc->vsc_vnafd, VNA_IOC_INTR_CLR,
-			    VIONA_RXQ);
-			if (error != 0) {
-				WPRINTF(("ioctl viona rx intr clear failed"
-				    " %d\n", error));
-			}
-		}
+		if (pollset.revents & POLLRDBAND) {
+			vioc_intr_poll_t vip;
+			uint_t i;
 
-		if (pollset.revents & POLLOUT) {
-			pci_generate_msix(sc->vsc_pi,
-			    sc->vsc_msix_table_idx[VIONA_TXQ]);
-			error = ioctl(sc->vsc_vnafd, VNA_IOC_INTR_CLR,
-			    VIONA_TXQ);
-			if (error != 0) {
-				WPRINTF(("ioctl viona tx intr clear failed"
-				    " %d\n", error));
+			res = ioctl(fd, VNA_IOC_INTR_POLL, &vip);
+			for (i = 0; res > 0 && i < VIONA_VQ_MAX; i++) {
+				if (vip.vip_status[i] == 0) {
+					continue;
+				}
+				pci_generate_msix(sc->vsc_pi,
+				    sc->vsc_msix_table_idx[i]);
+				res = ioctl(fd, VNA_IOC_RING_INTR_CLR, i);
+				if (res != 0) {
+					WPRINTF(("ioctl viona vq %d intr "
+					    "clear failed %d\n", i, errno));
+				}
 			}
 		}
 	}
@@ -496,6 +495,88 @@ pci_viona_barupdate(struct pci_devinst *pi, int idx, int reg)
 }
 
 static void
+pci_viona_ring_set_msix(struct pci_devinst *pi, uint_t ring)
+{
+	struct pci_viona_softc *sc = pi->pi_arg;
+	struct msix_table_entry mte;
+	uint16_t tab_index;
+	vioc_ring_msi_t vrm;
+	int res;
+
+	if (ring > VIONA_VQ_TX) {
+		return;
+	}
+	vrm.rm_index = ring;
+	vrm.rm_addr = 0;
+	vrm.rm_msg = 0;
+	tab_index = sc->vsc_msix_table_idx[ring];
+
+	if (tab_index != VIRTIO_MSI_NO_VECTOR && sc->vsc_msix_active) {
+		mte = pi->pi_msix.table[tab_index];
+		if ((mte.vector_control & PCIM_MSIX_VCTRL_MASK) == 0) {
+			vrm.rm_addr = mte.addr;
+			vrm.rm_msg = mte.msg_data;
+		}
+	}
+
+	res = ioctl(sc->vsc_vnafd, VNA_IOC_RING_SET_MSI, &vrm);
+	if (res != 0) {
+		WPRINTF(("ioctl viona set_msi %d failed %d\n", ring, errno));
+	}
+}
+
+static void
+pci_viona_lintrupdate(struct pci_devinst *pi)
+{
+	struct pci_viona_softc *sc = pi->pi_arg;
+	boolean_t msix_on, do_toggle = B_FALSE;
+
+	pthread_mutex_lock(&sc->vsc_mtx);
+	msix_on = pci_msix_enabled(pi) && (pi->pi_msix.function_mask == 0);
+	if ((sc->vsc_msix_active && !msix_on) ||
+	    (msix_on && !sc->vsc_msix_active)) {
+		uint_t i;
+
+		sc->vsc_msix_active = msix_on;
+		/* Update in-kernel ring configs */
+		for (i = 0; i <= VIONA_VQ_TX; i++) {
+			pci_viona_ring_set_msix(pi, i);
+		}
+	}
+	pthread_mutex_unlock(&sc->vsc_mtx);
+}
+
+static void
+pci_viona_msix_update(struct pci_devinst *pi, uint64_t offset)
+{
+	struct pci_viona_softc *sc = pi->pi_arg;
+	uint_t tab_index, i;
+
+	pthread_mutex_lock(&sc->vsc_mtx);
+	if (!sc->vsc_msix_active) {
+		pthread_mutex_unlock(&sc->vsc_mtx);
+		return;
+	}
+
+	/*
+	 * Rather than update every possible MSI-X vector, cheat and use the
+	 * offset to calculate the entry within the table.  Since this should
+	 * only be called when a write to the table succeeds, the index should
+	 * be valid.
+	 */
+	tab_index = offset / MSIX_TABLE_ENTRY_SIZE;
+
+	for (i = 0; i <= VIONA_VQ_TX; i++) {
+		if (sc->vsc_msix_table_idx[i] != tab_index) {
+			continue;
+		}
+		pci_viona_ring_set_msix(pi, i);
+	}
+
+	pthread_mutex_unlock(&sc->vsc_mtx);
+}
+
+static void
 pci_viona_qnotify(struct pci_viona_softc *sc, int ring)
 {
 	int error;
@@ -527,7 +608,9 @@ pci_viona_write(struct vmctx *ctx, int vcpu, struct pci_devinst *pi,
 
 	if (baridx == pci_msix_table_bar(pi) ||
 	    baridx == pci_msix_pba_bar(pi)) {
-		pci_emul_msix_twrite(pi, offset, size, value);
+		if (pci_emul_msix_twrite(pi, offset, size, value) == 0) {
+			pci_viona_msix_update(pi, offset);
+		}
 		return;
 	}
 
@@ -728,10 +811,11 @@ pci_viona_read(struct vmctx *ctx, int vcpu, struct pci_devinst *pi,
 }
 
 struct pci_devemu pci_de_viona = {
-	.pe_emu = 	"virtio-net-viona",
+	.pe_emu =	"virtio-net-viona",
 	.pe_init =	pci_viona_init,
 	.pe_barwrite =	pci_viona_write,
 	.pe_barread =	pci_viona_read,
-	.pe_barupdate =	pci_viona_barupdate
+	.pe_barupdate =	pci_viona_barupdate,
+	.pe_lintrupdate = pci_viona_lintrupdate
 };
 PCI_EMUL_SET(pci_de_viona);

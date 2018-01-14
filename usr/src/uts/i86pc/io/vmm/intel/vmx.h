@@ -118,6 +118,7 @@ struct vmx {
 	uint64_t	guest_msrs[VM_MAXCPU][GUEST_MSR_NUM];
 #ifndef	__FreeBSD__
 	uint64_t	host_msrs[VM_MAXCPU][GUEST_MSR_NUM];
+	uint64_t	tsc_offset[VM_MAXCPU];
 #endif
 	struct vmxctx	ctx[VM_MAXCPU];
 	struct vmxcap	cap[VM_MAXCPU];
