@@ -1057,7 +1057,7 @@ uart_set_backend(struct uart_softc *sc, const char *opts)
 		}
 #ifndef __FreeBSD__
 	} else if (strncmp("socket,", opts, 7) == 0) {
-		retval = uart_sock_backend(sc, opts);
+		return (uart_sock_backend(sc, opts));
 #endif
 	} else if (uart_tty_backend(sc, opts) == 0) {
 		retval = 0;
