@@ -92,6 +92,7 @@ struct pci_fbuf_softc {
 	} __packed memregs;
 
 	/* rfb server */
+	char      *rfb_sock;
 	char      *rfb_host;
 	int       rfb_port;
 	int       rfb_wait;
@@ -246,9 +247,11 @@ pci_fbuf_parse_opts(struct pci_fbuf_softc *sc, char *opts)
 		DPRINTF(DEBUG_VERBOSE, ("pci_fbuf option %s = %s\r\n",
 		   xopts, config));
 
-		if (!strcmp(xopts, "tcp") || !strcmp(xopts, "rfb")) {
+		if (!strcmp(xopts, "socket")) {
+			sc->rfb_sock = config;
+		} else if (!strcmp(xopts, "tcp") || !strcmp(xopts, "rfb")) {
 			/* parse host-ip:port */
-		        tmpstr = strsep(&config, ":");
+			tmpstr = strsep(&config, ":");
 			if (!config)
 				sc->rfb_port = atoi(tmpstr);
 			else {
@@ -407,7 +410,8 @@ pci_fbuf_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 
 	memset((void *)sc->fb_base, 0, FB_SIZE);
 
-	error = rfb_init(sc->rfb_host, sc->rfb_port, sc->rfb_wait);
+	error = rfb_init(sc->rfb_sock, sc->rfb_host, sc->rfb_port,
+	    sc->rfb_wait);
 done:
 	if (error)
 		free(sc);

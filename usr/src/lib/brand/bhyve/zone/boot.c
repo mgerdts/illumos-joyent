@@ -262,6 +262,21 @@ add_lpc(int *argc, char **argv)
 	return (0);
 }
 
+/*
+ * XXX-mg  Make this configurable in zonecfg
+ */
+int
+add_vnc(int *argc, char **argv)
+{
+	if (add_arg(argc, argv, "-s") != 0 ||
+	    add_arg(argc, argv, "29,fbuf,socket=/tmp/vm.vnc") != 0 ||
+	    add_arg(argc, argv, "-s") != 0 ||
+	    add_arg(argc, argv, "30,xhci,tablet") != 0) {
+		return (-1);
+	}
+	return (0);
+}
+
 /* Must be called last */
 int
 add_vmname(int *argc, char **argv)
@@ -349,6 +364,7 @@ main(int argc, char **argv)
 	    add_ram(&zhargc, (char **)&zhargv) != 0 ||
 	    add_disks(&zhargc, (char **)&zhargv) != 0 ||
 	    add_nets(&zhargc, (char **)&zhargv) != 0 ||
+	    add_vnc(&zhargc, (char **)&zhargv) != 0 ||
 	    add_vmname(&zhargc, (char **)&zhargv) != 0) {
 		return (1);
 	}

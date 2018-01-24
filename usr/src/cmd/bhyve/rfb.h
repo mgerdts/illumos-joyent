@@ -24,6 +24,8 @@
  * SUCH DAMAGE.
  *
  * $FreeBSD$
+ *
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 #ifndef _RFB_H_
@@ -31,6 +33,6 @@
 
 #define	RFB_PORT	5900
 
-int	rfb_init(char *hostname, int port, int wait);
+int	rfb_init(char *sockpath, char *hostname, int port, int wait);
 
 #endif /* _RFB_H_ */

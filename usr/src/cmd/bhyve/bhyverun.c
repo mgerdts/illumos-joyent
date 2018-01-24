@@ -92,7 +92,6 @@ __FBSDID("$FreeBSD$");
 #include "smbiostbl.h"
 #include "xmsr.h"
 #include "spinup_ap.h"
-#include "rfb.h"
 #include "rtc.h"
 #include "vga.h"
 
@@ -860,7 +859,7 @@ do_open(const char *vmname)
 int
 main(int argc, char *argv[])
 {
-	int c, error, gdb_port, rfb_port, err, bvmcons;
+	int c, error, gdb_port, err, bvmcons;
 	int max_vcpus, mptgen, memflags;
 	int rtc_localtime;
 	struct vmctx *ctx;
@@ -871,7 +870,6 @@ main(int argc, char *argv[])
 	bvmcons = 0;
 	progname = basename(argv[0]);
 	gdb_port = 0;
-	rfb_port = -1;
 	guest_ncpus = 1;
 	memsize = 256 * MB;
 	mptgen = 1;
@@ -902,12 +900,6 @@ main(int argc, char *argv[])
 			}
 			break;
 #endif
-		case 'r':
-			if (optarg[0] == ':')
-				rfb_port = atoi(optarg + 1) + RFB_PORT;
-			else
-				rfb_port = atoi(optarg);
-			break;
                 case 'c':
 			guest_ncpus = atoi(optarg);
 			break;
@@ -1030,15 +1022,6 @@ main(int argc, char *argv[])
 
 	if (bvmcons)
 		init_bvmcons();
-
-#if notyet
-	console_init();
-#endif
-	vga_init(1);
-#if notyet
-	if (rfb_port != -1)
-		rfb_init(rfb_port);
-#endif
 
 	if (lpc_bootrom()) {
 		if (vm_set_capability(ctx, BSP, VM_CAP_UNRESTRICTED_GUEST, 1)) {

@@ -869,10 +869,9 @@ sse42_supported(void)
 }
 
 int
-rfb_init(char *hostname, int port, int wait)
+rfb_init(char *sockpath, char *hostname, int port, int wait)
 {
 	struct rfb_softc *rc;
-	struct sockaddr_in sin;
 	int on = 1;
 #ifndef WITHOUT_CAPSICUM
 	cap_rights_t rights;
@@ -887,27 +886,59 @@ rfb_init(char *hostname, int port, int wait)
 	rc->crc_width = RFB_MAX_WIDTH;
 	rc->crc_height = RFB_MAX_HEIGHT;
 
-	rc->sfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (rc->sfd < 0) {
-		perror("socket");
-		return (-1);
-	}
+	if (sockpath != NULL) {
+		struct sockaddr_un sock;
 
-	setsockopt(rc->sfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+		assert(hostname == NULL && port == 0);
+
+		rc->sfd = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (rc->sfd < 0) {
+			perror("socket");
+			return (-1);
+		}
+
+		sock.sun_family = AF_UNIX;
+		if (strlcpy(sock.sun_path, sockpath, sizeof (sock.sun_path)) >=
+		    sizeof (sock.sun_path)) {
+			(void) fprintf(stderr, "path '%s' too long\n",
+			    sockpath);
+			(void) close(rc->sfd);
+			rc->sfd = -1;
+			return (-1);
+		}
+
+		(void) unlink(sock.sun_path);
+		if (bind(rc->sfd, (struct sockaddr *)&sock,
+		    sizeof (sock)) == -1) {
+			perror("bind");
+			(void) close(rc->sfd);
+			rc->sfd = -1;
+			return (-1);
+		}
+	} else {
+		struct sockaddr_in sin;
+		rc->sfd = socket(AF_INET, SOCK_STREAM, 0);
+		if (rc->sfd < 0) {
+			perror("socket");
+			return (-1);
+		}
+
+		setsockopt(rc->sfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
 #ifdef	__FreeBSD__
-	sin.sin_len = sizeof(sin);
+		sin.sin_len = sizeof(sin);
 #endif
-	sin.sin_family = AF_INET;
-	sin.sin_port = port ? htons(port) : htons(5900);
-	if (hostname && strlen(hostname) > 0)
-		inet_pton(AF_INET, hostname, &(sin.sin_addr));
-	else
-		sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+		sin.sin_family = AF_INET;
+		sin.sin_port = port ? htons(port) : htons(5900);
+		if (hostname && strlen(hostname) > 0)
+			inet_pton(AF_INET, hostname, &(sin.sin_addr));
+		else
+			sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
-	if (bind(rc->sfd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-		perror("bind");
-		return (-1);
+		if (bind(rc->sfd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+			perror("bind");
+			return (-1);
+		}
 	}
 
 	if (listen(rc->sfd, 1) < 0) {
