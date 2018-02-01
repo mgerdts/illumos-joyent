@@ -582,8 +582,6 @@ ppt_find(dev_t dev)
 {
 	struct pptdev *ppt;
 
-	ASSERT(MUTEX_HELD(&pptdev_mtx));
-
 	for (ppt = list_head(&pptdev_list); ppt != NULL;
 	    ppt = list_next(&pptdev_list, ppt)) {
 		if (ppt->pptd_dev == dev) {
