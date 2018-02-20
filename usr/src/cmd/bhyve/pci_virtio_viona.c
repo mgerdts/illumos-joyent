@@ -211,19 +211,31 @@ pci_viona_poll_thread(void *param)
 		if (pollset.revents & POLLRDBAND) {
 			vioc_intr_poll_t vip;
 			uint_t i;
+			boolean_t assert_lintr = B_FALSE;
+			const boolean_t do_msix = pci_msix_enabled(sc->vsc_pi);
 
 			res = ioctl(fd, VNA_IOC_INTR_POLL, &vip);
 			for (i = 0; res > 0 && i < VIONA_VQ_MAX; i++) {
 				if (vip.vip_status[i] == 0) {
 					continue;
 				}
-				pci_generate_msix(sc->vsc_pi,
-				    sc->vsc_msix_table_idx[i]);
+				if (do_msix) {
+					pci_generate_msix(sc->vsc_pi,
+					    sc->vsc_msix_table_idx[i]);
+				} else {
+					assert_lintr = B_TRUE;
+				}
 				res = ioctl(fd, VNA_IOC_RING_INTR_CLR, i);
 				if (res != 0) {
 					WPRINTF(("ioctl viona vq %d intr "
 					    "clear failed %d\n", i, errno));
 				}
+			}
+			if (assert_lintr) {
+				pthread_mutex_lock(&sc->vsc_mtx);
+				sc->vsc_isr |= VTCFG_ISR_QUEUES;
+				pci_lintr_assert(sc->vsc_pi);
+				pthread_mutex_unlock(&sc->vsc_mtx);
 			}
 		}
 	}
@@ -371,9 +383,9 @@ pci_viona_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 	dladm_status_t		status;
 	dladm_vnic_attr_t	attr;
 	char			errmsg[DLADM_STRSIZE];
-	int error;
+	int error, i;
 	struct pci_viona_softc *sc;
-	int i;
+	uint64_t ioport;
 
 	if (opts == NULL) {
 		printf("virtio-viona: vnic required\n");
@@ -441,15 +453,34 @@ pci_viona_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 	for (i = 0; i < VIONA_MAXQ; i++)
 		sc->vsc_msix_table_idx[i] = VIRTIO_MSI_NO_VECTOR;
 
-	/*
-	 * BAR 1 used to map MSI-X table and PBA
-	 */
+	/* BAR 1 used to map MSI-X table and PBA */
 	if (pci_emul_add_msixcap(pi, VIONA_MAXQ, 1)) {
 		free(sc);
 		return (1);
 	}
 
-	pci_emul_alloc_bar(pi, 0, PCIBAR_IO, VIONA_REGSZ);
+	/* BAR 0 for legacy-style virtio register access. */
+	error = pci_emul_alloc_bar(pi, 0, PCIBAR_IO, VIONA_REGSZ);
+	if (error != NULL) {
+		WPRINTF(("could not allocate virtio BAR\n"));
+		free(sc);
+		return (1);
+	}
+
+	/* Install ioport hook for virtqueue notification */
+	ioport = pi->pi_bar[0].addr + VTCFG_R_QNOTIFY;
+	error = ioctl(sc->vsc_vnafd, VNA_IOC_SET_NOTIFY_IOP, ioport);
+	if (error != 0) {
+		WPRINTF(("could not install ioport hook at %x\n", ioport));
+		free(sc);
+		return (1);
+	}
+
+	/*
+	 * Need a legacy interrupt for virtio compliance, even though MSI-X
+	 * operation is _strongly_ suggested for adequate performance.
+	 */
+	pci_lintr_request(pi);
 
 	return (0);
 }
@@ -467,31 +498,6 @@ viona_adjust_offset(struct pci_devinst *pi, uint64_t offset)
 	}
 
 	return (offset);
-}
-
-static void
-pci_viona_barupdate(struct pci_devinst *pi, int idx, int reg)
-{
-	struct pci_viona_softc *sc = pi->pi_arg;
-	uint_t ioport;
-	int err;
-
-	/* Only care about updates to the virtio cfg area */
-	if (idx != 0) {
-		return;
-	}
-
-	assert(pi->pi_bar[idx].type == PCIBAR_IO);
-	if (reg == 0) {
-		ioport = 0;
-	} else {
-		ioport = pi->pi_bar[idx].addr;
-		ioport += viona_adjust_offset(pi, VTCFG_R_QNOTIFY);
-	}
-	err = ioctl(sc->vsc_vnafd, VNA_IOC_SET_NOTIFY_IOP, ioport);
-	if (err != 0) {
-		DPRINTF(("viona: failed setting notify ioport (%x)\n", ioport));
-	}
 }
 
 static void
@@ -815,7 +821,6 @@ struct pci_devemu pci_de_viona = {
 	.pe_init =	pci_viona_init,
 	.pe_barwrite =	pci_viona_write,
 	.pe_barread =	pci_viona_read,
-	.pe_barupdate =	pci_viona_barupdate,
 	.pe_lintrupdate = pci_viona_lintrupdate
 };
 PCI_EMUL_SET(pci_de_viona);

@@ -71,7 +71,6 @@ struct pci_devemu {
 				uint64_t offset, int size);
 
 #ifndef __FreeBSD__
-	void	(*pe_barupdate)(struct pci_devinst *pi, int idx, int reg);
 	void	(*pe_lintrupdate)(struct pci_devinst *pi);
 #endif /* __FreeBSD__ */
 };
