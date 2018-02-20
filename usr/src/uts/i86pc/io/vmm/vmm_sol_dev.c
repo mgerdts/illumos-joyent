@@ -1320,6 +1320,18 @@ vmmdev_do_vm_create(char *name, cred_t *cr)
 		return (EEXIST);
 	}
 
+	/* Allow only one instance per non-global zone. */
+	if (!INGLOBALZONE(curproc)) {
+		for (sc = list_head(&vmmdev_list); sc != NULL;
+		    sc = list_next(&vmmdev_list, sc)) {
+			if (sc->vmm_zone == curzone) {
+				vmmdev_mod_decr();
+				mutex_exit(&vmmdev_mtx);
+				return (EINVAL);
+			}
+		}
+	}
+
 	minor = id_alloc(vmmdev_minors);
 	if (ddi_soft_state_zalloc(vmm_statep, minor) != DDI_SUCCESS) {
 		goto fail;
@@ -1874,8 +1886,14 @@ vmm_sdev_filldir(sdev_ctx_t ctx)
 
 	for (sc = list_head(&vmmdev_list); sc != NULL;
 	    sc = list_next(&vmmdev_list, sc)) {
-		ret = sdev_plugin_mknod(ctx, sc->vmm_name, S_IFCHR | 0600,
-		    makedevice(ddi_driver_major(vmm_dip), sc->vmm_minor));
+		if (INGLOBALZONE(curproc) || sc->vmm_zone == curzone) {
+			ret = sdev_plugin_mknod(ctx, sc->vmm_name,
+			    S_IFCHR | 0600,
+			    makedevice(ddi_driver_major(vmm_dip),
+			    sc->vmm_minor));
+		} else {
+			continue;
+		}
 		if (ret != 0 && ret != EEXIST)
 			goto out;
 	}
