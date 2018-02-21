@@ -7,8 +7,6 @@
 # Management Information without the express written permission from
 # Pluribus Networks Inc is prohibited, and any such unauthorized removal
 # or alteration will be a violation of federal law.
-#
-# Copyright 2018 Joyent, Inc.
 
 MODULE = vmm.so
 MDBTGT = kvm
@@ -18,10 +16,6 @@ MODSRCS = vmm.c
 include ../../../../../Makefile.cmd
 include ../../../../../Makefile.cmd.64
 include ../../../Makefile.amd64
-
-# This kmod goes in /usr/kernel/kmdb
-ROOTKMOD = $(ROOT)/usr/kernel/kmdb$(MACHMODDIR)
-
 include ../../../../Makefile.module
 
 CPPFLAGS = -D_KERNEL -D_MACHDEP

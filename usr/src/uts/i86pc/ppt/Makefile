@@ -7,8 +7,6 @@
 # Management Information without the express written permission from
 # Pluribus Networks Inc is prohibited, and any such unauthorized removal
 # or alteration will be a violation of federal law.
-#
-# Copyright 2018 Joyent, Inc.
 
 #
 #	Path to the base of the uts directory tree (usually /usr/src/uts).
@@ -21,7 +19,7 @@ UTSBASE	= ../..
 MODULE		= ppt
 OBJECTS		= $(PPT_OBJS:%=$(OBJS_DIR)/%)
 LINTS		= $(PPT_OBJS:%.o=$(LINTS_DIR)/%.ln)
-ROOTMODULE	= $(USR_DRV_DIR)/$(MODULE)
+ROOTMODULE	= $(ROOT_DRV_DIR)/$(MODULE)
 CONF_SRCDIR	= $(UTSBASE)/i86pc/io/vmm/io
 
 #
