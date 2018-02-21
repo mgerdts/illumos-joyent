@@ -15,4 +15,6 @@
 
 ps_brand=bhyve
 
+NO_BURSTING=1
+
 . /usr/lib/brand/jcommon/statechange
