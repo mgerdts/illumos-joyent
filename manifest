@@ -664,7 +664,6 @@ f kernel/drv/amd64/physmem 0755 root sys
 f kernel/drv/amd64/pmcs 0755 root sys
 f kernel/drv/amd64/poll 0755 root sys
 f kernel/drv/amd64/power 0755 root sys
-f kernel/drv/amd64/ppt 0755 root sys
 f kernel/drv/amd64/profile 0755 root sys
 f kernel/drv/amd64/pseudo 0755 root sys
 f kernel/drv/amd64/ptc 0755 root sys
@@ -730,8 +729,6 @@ f kernel/drv/amd64/urf 0755 root sys
 f kernel/drv/amd64/vgatext 0755 root sys
 f kernel/drv/amd64/vioblk 0755 root sys
 f kernel/drv/amd64/vioif 0755 root sys
-f kernel/drv/amd64/viona 0755 root sys
-f kernel/drv/amd64/vmm 0755 root sys
 f kernel/drv/amd64/vmxnet 0755 root sys
 f kernel/drv/amd64/vmxnet3s 0755 root sys
 f kernel/drv/amd64/vnd 0755 root sys
@@ -822,7 +819,6 @@ f kernel/drv/physmem.conf 0644 root sys
 f kernel/drv/pmcs.conf 0644 root sys
 f kernel/drv/poll.conf 0644 root sys
 f kernel/drv/power.conf 0644 root sys
-f kernel/drv/ppt.conf 0644 root sys
 f kernel/drv/profile.conf 0644 root sys
 f kernel/drv/pseudo.conf 0644 root sys
 f kernel/drv/ptc.conf 0644 root sys
@@ -863,8 +859,6 @@ f kernel/drv/uhci.conf 0644 root sys
 f kernel/drv/usbftdi.conf 0644 root sys
 f kernel/drv/usbser_edge.conf 0644 root sys
 f kernel/drv/usbskel.conf 0644 root sys
-f kernel/drv/viona.conf 0644 root sys
-f kernel/drv/vmm.conf 0644 root sys
 f kernel/drv/vmxnet.conf 0644 root sys
 f kernel/drv/vmxnet3s.conf 0644 root sys
 f kernel/drv/vnd.conf 0644 root sys
@@ -990,7 +984,6 @@ f kernel/kmdb/amd64/sv 0555 root sys
 f kernel/kmdb/amd64/ufs 0555 root sys
 f kernel/kmdb/amd64/uhci 0555 root sys
 f kernel/kmdb/amd64/usba 0555 root sys
-f kernel/kmdb/amd64/vmm 0555 root sys
 f kernel/kmdb/amd64/xhci 0555 root sys
 f kernel/kmdb/amd64/zfs 0555 root sys
 d kernel/mac 0755 root sys
@@ -4579,6 +4572,7 @@ f usr/kernel/drv/amd64/lxautofs 0755 root sys
 f usr/kernel/drv/amd64/nsmb 0755 root sys
 f usr/kernel/drv/amd64/pm 0755 root sys
 f usr/kernel/drv/amd64/pool 0755 root sys
+f usr/kernel/drv/amd64/ppt 0755 root sys
 f usr/kernel/drv/amd64/ptm 0755 root sys
 f usr/kernel/drv/amd64/pts 0755 root sys
 f usr/kernel/drv/amd64/signalfd 0755 root sys
@@ -4586,6 +4580,8 @@ f usr/kernel/drv/amd64/smbsrv 0755 root sys
 f usr/kernel/drv/amd64/sppp 0755 root sys
 f usr/kernel/drv/amd64/sppptun 0755 root sys
 f usr/kernel/drv/amd64/timerfd 0755 root sys
+f usr/kernel/drv/amd64/viona 0755 root sys
+f usr/kernel/drv/amd64/vmm 0755 root sys
 f usr/kernel/drv/amd64/zcons 0755 root sys
 f usr/kernel/drv/amd64/zfd 0755 root sys
 f usr/kernel/drv/bpf.conf 0644 root sys
@@ -4604,6 +4600,7 @@ f usr/kernel/drv/lx_systrace.conf 0644 root sys
 f usr/kernel/drv/nsmb.conf 0644 root sys
 f usr/kernel/drv/pm.conf 0644 root sys
 f usr/kernel/drv/pool.conf 0644 root sys
+f usr/kernel/drv/ppt.conf 0644 root sys
 f usr/kernel/drv/ptm.conf 0644 root sys
 f usr/kernel/drv/pts.conf 0644 root sys
 f usr/kernel/drv/signalfd.conf 0644 root sys
@@ -4611,6 +4608,8 @@ f usr/kernel/drv/smbsrv.conf 0644 root sys
 f usr/kernel/drv/sppp.conf 0644 root sys
 f usr/kernel/drv/sppptun.conf 0644 root sys
 f usr/kernel/drv/timerfd.conf 0644 root sys
+f usr/kernel/drv/viona.conf 0644 root sys
+f usr/kernel/drv/vmm.conf 0644 root sys
 d usr/kernel/fs 0755 root sys
 d usr/kernel/fs/amd64 0755 root sys
 f usr/kernel/fs/amd64/fdfs 0755 root sys
@@ -4625,6 +4624,7 @@ d usr/kernel/kmdb 0755 root sys
 d usr/kernel/kmdb/amd64 0755 root sys
 f usr/kernel/kmdb/amd64/smbfs 0555 root sys
 f usr/kernel/kmdb/amd64/smbsrv 0555 root sys
+f usr/kernel/kmdb/amd64/vmm 0555 root sys
 d usr/kernel/sched 0755 root sys
 d usr/kernel/sched/amd64 0755 root sys
 f usr/kernel/sched/amd64/FSS 0755 root sys
