@@ -335,7 +335,6 @@ pci_vtblk_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 	blockif_psectsz(bctxt, &sts, &sto);
 
 	sc = calloc(1, sizeof(struct pci_vtblk_softc));
-
 	sc->bc = bctxt;
 	for (i = 0; i < VTBLK_RINGSZ; i++) {
 		struct pci_vtblk_ioreq *io = &sc->vbsc_ios[i];

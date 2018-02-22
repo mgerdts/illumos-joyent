@@ -30,7 +30,6 @@
 #define	ZHYVE_CMD_FILE	"/var/run/bhyve/zhyve.cmd"
 #define	ZHYVE_LOG_FILE	"/tmp/zhyve.log"
 
-/* XXX-mg this is to support vmadm.  It should not be here. */
 #define	FILE_PROVISIONING	"/var/svc/provisioning"
 #define	FILE_PROVISION_SUCCESS	"/var/svc/provision_success"
 

@@ -921,7 +921,7 @@ vga_port_in_handler(struct vmctx *ctx, int in, int port, int bytes,
 		sc->vga_sts1 = GEN_IS1_VR | GEN_IS1_DE;
 		//sc->vga_sts1 ^= (GEN_IS1_VR | GEN_IS1_DE);
 #else
-		/* XXXJOY: Something apparently wants to see this toggled */
+		/* Something apparently wants to see this toggled */
 		sc->vga_sts1 ^= (GEN_IS1_VR | GEN_IS1_DE);
 #endif
 		*val = sc->vga_sts1;

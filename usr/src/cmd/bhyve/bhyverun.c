@@ -861,7 +861,7 @@ do_open(const char *vmname)
 int
 main(int argc, char *argv[])
 {
-	int c, error, gdb_port, rfb_port, err, bvmcons;
+	int c, error, gdb_port, err, bvmcons;
 	int max_vcpus, mptgen, memflags;
 	int rtc_localtime;
 	struct vmctx *ctx;
@@ -872,7 +872,6 @@ main(int argc, char *argv[])
 	bvmcons = 0;
 	progname = basename(argv[0]);
 	gdb_port = 0;
-	rfb_port = -1;
 	guest_ncpus = 1;
 	memsize = 256 * MB;
 	mptgen = 1;
@@ -880,9 +879,9 @@ main(int argc, char *argv[])
 	memflags = 0;
 
 #ifdef	__FreeBSD__
-	optstr = "abehuwxACHIPSWYp:r:g:c:s:m:l:B:U:";
+	optstr = "abehuwxACHIPSWYp:g:c:s:m:l:B:U:";
 #else
-	optstr = "abehuwxACHIPSWYr:g:c:s:m:l:B:U:";
+	optstr = "abehuwxACHIPSWYg:c:s:m:l:B:U:";
 #endif
 	while ((c = getopt(argc, argv, optstr)) != -1) {
 		switch (c) {
@@ -909,12 +908,6 @@ main(int argc, char *argv[])
 			}
 			break;
 #endif
-		case 'r':
-			if (optarg[0] == ':')
-				rfb_port = atoi(optarg + 1) + RFB_PORT;
-			else
-				rfb_port = atoi(optarg);
-			break;
                 case 'c':
 			guest_ncpus = atoi(optarg);
 			break;
@@ -966,6 +959,9 @@ main(int argc, char *argv[])
 			break;
 		case 'U':
 			guest_uuid_str = optarg;
+			break;
+		case 'w':
+			strictmsr = 0;
 			break;
 		case 'W':
 			virtio_msix = 0;
@@ -1025,6 +1021,7 @@ main(int argc, char *argv[])
 	ioapic_init(ctx);
 
 	rtc_init(ctx, rtc_localtime);
+	sci_init(ctx);
 
 	/*
 	 * Exit if a device emulation finds an error in it's initilization
@@ -1038,14 +1035,7 @@ main(int argc, char *argv[])
 	if (bvmcons)
 		init_bvmcons();
 
-#if notyet
-	console_init();
-#endif
 	vga_init(1);
-#if notyet
-	if (rfb_port != -1)
-		rfb_init(rfb_port);
-#endif
 
 	if (lpc_bootrom()) {
 		if (vm_set_capability(ctx, BSP, VM_CAP_UNRESTRICTED_GUEST, 1)) {

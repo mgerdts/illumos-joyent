@@ -49,7 +49,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/ioctl.h>
 #include <machine/atomic.h>
 #include <net/ethernet.h>
-#if notyet
+#if __FreeBSD__
 #ifndef NETMAP_WITH_LIBS
 #define NETMAP_WITH_LIBS
 #endif
@@ -447,7 +447,7 @@ pci_vtnet_tap_rx(struct pci_vtnet_softc *sc)
 	vq_endchains(vq, 1);
 }
 
-#if notyet
+#if __FreeBSD__
 static __inline int
 pci_vtnet_netmap_writev(struct nm_desc *nmd, struct iovec *iov, int iovcnt)
 {
@@ -932,7 +932,7 @@ pci_vtnet_tap_setup(struct pci_vtnet_softc *sc, char *devname)
 #endif
 }
 
-#if notyet
+#if __FreeBSD__
 static void
 pci_vtnet_netmap_setup(struct pci_vtnet_softc *sc, char *ifname)
 {
@@ -973,8 +973,7 @@ pci_vtnet_init(struct vmctx *ctx, struct pci_devinst *pi, char *opts)
 	int mac_provided;
 	int use_msix;
 
-	sc = malloc(sizeof(struct pci_vtnet_softc));
-	memset(sc, 0, sizeof(struct pci_vtnet_softc));
+	sc = calloc(1, sizeof(struct pci_vtnet_softc));
 
 	pthread_mutex_init(&sc->vsc_mtx, NULL);
 
