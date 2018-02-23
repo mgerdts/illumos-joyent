@@ -12,14 +12,7 @@
 #
 
 PROG =		bhyve
-SHAREFILES =	BHYVE_UEFI.fd BHYVE_UEFI_CSM.fd
 ZHYVE =		$(ROOT)/usr/lib/brand/bhyve/zhyve
-
-USRSHAREDIR =		$(ROOT)/usr/share/bhyve
-
-USRSHAREFILES =		$(SHAREFILES:%=$(USRSHAREDIR)/%)
-$(USRSHAREFILES) :=	FILEMODE = 0444
-
 
 include ../Makefile.cmd
 
@@ -40,9 +33,6 @@ install: $(SUBDIRS) $(USRSHAREFILES)
 	$(LN) $(ISAEXEC) $(ROOTUSRSBINPROG)
 	$(RM) $(ZHYVE)
 	$(LN) $(ROOTUSRSBIN64)/$(PROG) $(ZHYVE)
-
-$(USRSHAREDIR)/%: %
-	$(INS.file)
 
 $(SUBDIRS):	FRC
 	@cd $@; pwd; $(MAKE) CW_NO_SHADOW=true __GNUC= $(TARGET)

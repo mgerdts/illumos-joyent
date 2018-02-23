@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libnvpair.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +37,8 @@
 #define	BHYVE_ARGS_FILE		BHYVE_DIR "/" "zhyve.cmd"
 
 #define	ZH_MAXARGS		100
+
+#define	DEFAULT_BOOTROM		"/usr/share/bhyve/uefi-csm-rom.bin"
 
 typedef enum {
 	PCI_SLOT_HOSTBRIDGE = 0,	/* Not used here, but reserved */
@@ -251,9 +254,13 @@ int
 add_lpc(int *argc, char **argv)
 {
 	char *lpcdevs[] = { "bootrom", "com1", "com2", NULL };
+	const int bootrom_idx = 0;
 	int i;
 	char *val;
 	char conf[MAXPATHLEN];
+	bool found_bootrom = false;
+
+	assert(strcmp(lpcdevs[bootrom_idx], "bootrom") == 0);
 
 	(void) snprintf(conf, sizeof (conf), "%d,lpc", PCI_SLOT_LPC);
 	if (add_arg(argc, argv, "-s") != 0 ||
@@ -265,6 +272,9 @@ add_lpc(int *argc, char **argv)
 		if ((val = get_zcfg_var("attr", lpcdevs[i], NULL)) == NULL) {
 			continue;
 		}
+		if (i == bootrom_idx) {
+			found_bootrom = true;
+		}
 		if (snprintf(conf, sizeof (conf), "%s,%s", lpcdevs[i], val) >=
 		    sizeof (conf)) {
 			(void) printf("Error: value of attr '%s' too long\n",
@@ -273,6 +283,13 @@ add_lpc(int *argc, char **argv)
 		}
 		if (add_arg(argc, argv, "-l") != 0 ||
 		    add_arg(argc, argv, conf) != 0) {
+			return (-1);
+		}
+	}
+
+	if (!found_bootrom) {
+		if (add_arg(argc, argv, "-l") != 0 ||
+		    add_arg(argc, argv, "bootrom," DEFAULT_BOOTROM) != 0) {
 			return (-1);
 		}
 	}
