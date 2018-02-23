@@ -27,8 +27,6 @@ LINK_OBJS_i386 = \
 	drm_link_i386.o \
 	misc_link_i386.o \
 	lx_link_i386.o \
-	ppt_link_i386.o \
-	viona_link_i386.o \
 	xen_link.o
 
 lx_link_i386.o lx_link_i386.po lx_link_i386.ln := CPPFLAGS += -I$(UTSBASE)/common/brand/lx

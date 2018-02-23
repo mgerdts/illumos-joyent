@@ -26,6 +26,10 @@ OBJS +=		$(OBJS1)
 CLEANFILES +=	$(PROG1) $(OBJS1) $(PROG2) $(OBJS2)
 $(PROG1) :=	LDLIBS += -lnvpair
 
+$(PROG2) :=	CPPFLAGS = -I$(COMPAT)/freebsd -I$(CONTRIB)/freebsd \
+	$(CPPFLAGS.master) -I$(SRC)/uts/i86pc \
+	-I$(COMPAT)/freebsd/amd64 -I$(CONTRIB)/freebsd/amd64
+
 TEMPLATES =	SYSbhyve.xml
 XMLDOCS =	config.xml platform.xml
 CLOBBERFILES =	$(ROOTXMLDOCS) $(ROOTTEMPLATES) $(ROOTPROGS)

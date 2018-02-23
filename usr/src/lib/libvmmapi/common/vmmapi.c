@@ -106,10 +106,9 @@ struct vmctx {
 static int
 vm_do_ctl(int cmd, const char *name)
 {
-	const char vmm_ctl[] = "/dev/vmm/ctl";
 	int ctl_fd;
 
-	ctl_fd = open(vmm_ctl, O_EXCL | O_RDWR);
+	ctl_fd = open(VMM_CTL_DEV, O_EXCL | O_RDWR);
 	if (ctl_fd < 0) {
 		return (-1);
 	}

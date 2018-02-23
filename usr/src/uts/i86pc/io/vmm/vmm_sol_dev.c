@@ -1833,7 +1833,7 @@ out:
 static sdev_plugin_validate_t
 vmm_sdev_validate(sdev_ctx_t ctx)
 {
-	const char *name;
+	const char *name = sdev_ctx_name(ctx);
 	vmm_softc_t *sc;
 	sdev_plugin_validate_t ret;
 	minor_t minor;
@@ -1842,12 +1842,6 @@ vmm_sdev_validate(sdev_ctx_t ctx)
 		return (SDEV_VTOR_INVALID);
 
 	VERIFY3S(sdev_ctx_minor(ctx, &minor), ==, 0);
-
-	name = sdev_ctx_name(ctx);
-	if (strcmp(name, VMM_CTL_MINOR_NODE) == 0) {
-		ASSERT3U(minor, ==, VMM_CTL_MINOR);
-		return (SDEV_VTOR_VALID);
-	}
 
 	mutex_enter(&vmmdev_mtx);
 	if ((sc = vmm_lookup(name)) == NULL)
@@ -1878,11 +1872,6 @@ vmm_sdev_filldir(sdev_ctx_t ctx)
 		return (0);
 
 	mutex_enter(&vmmdev_mtx);
-
-	ret = sdev_plugin_mknod(ctx, VMM_CTL_MINOR_NODE, S_IFCHR | 0600,
-	    makedevice(ddi_driver_major(vmm_dip), VMM_CTL_MINOR));
-	if (ret != 0 && ret != EEXIST)
-		goto out;
 
 	for (sc = list_head(&vmmdev_list); sc != NULL;
 	    sc = list_next(&vmmdev_list, sc)) {
@@ -1956,7 +1945,7 @@ vmm_attach(dev_info_t *dip, ddi_attach_cmd_t cmd)
 	/*
 	 * Create control node.  Other nodes will be created on demand.
 	 */
-	if (ddi_create_minor_node(dip, VMM_CTL_MINOR_NODE, S_IFCHR,
+	if (ddi_create_minor_node(dip, "ctl", S_IFCHR,
 	    VMM_CTL_MINOR, DDI_PSEUDO, 0) != 0) {
 		return (DDI_FAILURE);
 	}
@@ -2010,7 +1999,7 @@ vmm_detach(dev_info_t *dip, ddi_detach_cmd_t cmd)
 	vmm_sdev_hdl = NULL;
 
 	/* Remove the control node. */
-	ddi_remove_minor_node(dip, VMM_CTL_MINOR_NODE);
+	ddi_remove_minor_node(dip, "ctl");
 	vmm_dip = NULL;
 	vmm_sol_glue_cleanup();
 	mutex_exit(&vmmdev_mtx);
@@ -2082,6 +2071,7 @@ _init(void)
 	error = mod_install(&modlinkage);
 	if (error) {
 		ddi_soft_state_fini(&vmm_statep);
+		vmm_zsd_fini();
 	}
 
 	return (error);

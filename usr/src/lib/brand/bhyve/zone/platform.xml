@@ -84,6 +84,7 @@
 	<device match="udp6" />
 	<device match="urandom" />
 	<device match="viona" />
+	<device match="vmmctl" />
 	<device match="vmm/*" />
 	<device match="vnd/*" />
 	<device match="zero" />

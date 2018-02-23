@@ -466,6 +466,8 @@ enum {
 #define	VMM_DESTROY_VM		(VMM_IOC_BASE | 0x02)
 #define	VMM_VM_SUPPORTED	(VMM_IOC_BASE | 0x03)
 
+#define	VMM_CTL_DEV		"/dev/vmmctl"
+
 #endif
 
 #endif

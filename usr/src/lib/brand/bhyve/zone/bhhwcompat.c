@@ -24,12 +24,10 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-/*
- * We can't include uts/i86pc/sys/vmm_dev.h into a user-level program, so we
- * have to copy the ioctl definition we need.
- */
-#define	VMM_IOC_BASE		(('V' << 16) | ('M' << 8))
-#define	VMM_VM_SUPPORTED	(VMM_IOC_BASE | 0x03)
+#include <sys/param.h>
+#include <sys/cpuset.h>
+#include <sys/vmm.h>
+#include <sys/vmm_dev.h>
 
 static void
 usage()
@@ -55,9 +53,9 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if ((fd = open("/dev/vmm/ctl", O_RDONLY | O_EXCL)) < 0) {
+	if ((fd = open(VMM_CTL_DEV, O_RDONLY | O_EXCL)) < 0) {
 		if (verbose)
-			fprintf(stderr, "missing /dev/vmm/ctl\n");
+			fprintf(stderr, "missing %s\n", VMM_CTL_DEV);
 		exit(1);
 	}
 
