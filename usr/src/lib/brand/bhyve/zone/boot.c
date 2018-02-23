@@ -23,7 +23,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <libnvpair.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -258,7 +257,7 @@ add_lpc(int *argc, char **argv)
 	int i;
 	char *val;
 	char conf[MAXPATHLEN];
-	bool found_bootrom = false;
+	boolean_t found_bootrom = B_FALSE;
 
 	assert(strcmp(lpcdevs[bootrom_idx], "bootrom") == 0);
 
@@ -273,7 +272,7 @@ add_lpc(int *argc, char **argv)
 			continue;
 		}
 		if (i == bootrom_idx) {
-			found_bootrom = true;
+			found_bootrom = B_TRUE;
 		}
 		if (snprintf(conf, sizeof (conf), "%s,%s", lpcdevs[i], val) >=
 		    sizeof (conf)) {
