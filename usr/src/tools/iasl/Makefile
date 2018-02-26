@@ -10,18 +10,18 @@
 #
 # Copyright (c) 2018, Joyent, Inc.
 #
-# Adapted from acpica/generate/unix/iasl/Makefile, which lacked a copyright
-# notice.
-#
-PROG=		iasl
 
-include ../../Makefile.cmd
-include ../../Makefile.cmd.64
-include ../../Makefile.ctf
+PROG =		iasl
 
-IASL_SRC_DIR	= $(SRC)/cmd/acpi/iasl
-IASL_OBJ_DIR	= $(SRC)/cmd/acpi/iasl
+include ../Makefile.tools
 
-include Makefile.iasl
+IASL_SRC_DIR =	$(SRC)/cmd/acpi/iasl
+IASL_OBJ_DIR =	$(SRC)/tools/iasl
 
-include ../../Makefile.targ
+include $(IASL_SRC_DIR)/Makefile.iasl
+
+VPATH +=	$(IASL_SRC_DIR)
+GM4FLAGS +=	-I$(IASL_SRC_DIR)
+CPPFLAGS +=	-I$(IASL_SRC_DIR)
+
+include ../Makefile.targ
