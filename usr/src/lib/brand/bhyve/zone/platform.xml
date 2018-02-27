@@ -84,8 +84,14 @@
 	<device match="udp6" />
 	<device match="urandom" />
 	<device match="viona" />
-	<device match="vmmctl" />
-	<device match="vmm/*" />
+	<!--
+	    Careful: this is not just about catching both /dev/vmmctl and the
+	    /dev/vmm directory.  In fact it's required to prevent a race where
+	    sdev processes "/dev/vmm/", sees it doesn't exist in the global
+	    /dev (as the module isn't loaded), then never updates its own sdev
+	    directory.  Adding the glob here ensures it's checked as needed.
+	 -->
+	<device match="vmm*" />
 	<device match="vnd/*" />
 	<device match="zero" />
 	<device match="zfs" />
