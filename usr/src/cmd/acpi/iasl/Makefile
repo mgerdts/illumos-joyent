@@ -22,6 +22,6 @@ include ../../Makefile.ctf
 IASL_SRC_DIR	= $(SRC)/cmd/acpi/iasl
 IASL_OBJ_DIR	= $(SRC)/cmd/acpi/iasl
 
-include Makefile.iasl
+include Makefile.com
 
 include ../../Makefile.targ

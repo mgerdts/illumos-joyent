@@ -18,7 +18,7 @@ include ../Makefile.tools
 IASL_SRC_DIR =	$(SRC)/cmd/acpi/iasl
 IASL_OBJ_DIR =	$(SRC)/tools/iasl
 
-include $(IASL_SRC_DIR)/Makefile.iasl
+include $(IASL_SRC_DIR)/Makefile.com
 
 $(OBJS) :=	VPATH += $(IASL_SRC_DIR)
 GM4FLAGS +=	-I$(IASL_SRC_DIR)
