@@ -70,7 +70,7 @@ uint32_t acpi_strtoul(const char *, char **, int);
  * we need to have private definitions here.
  */
 #define	ACPI_PRINTF_LIKE(c)	__PRINTFLIKE(c)
-#define	ACPI_UNUSED_VAR		__unused
+#define	ACPI_UNUSED_VAR		__attribute__((__unused__))
 #define	ACPI_USE_NATIVE_DIVIDE
 #define	ACPI_FLUSH_CPU_CACHE()	(__acpi_wbinvd())
 
