@@ -410,7 +410,7 @@ setup_reboot(char *zonename)
 int
 main(int argc, char **argv)
 {
-	int fd;
+	int fd, err;
 	char *zhargv[ZH_MAXARGS] = {
 		"zhyve",	/* Squats on argv[0] */
 		"-H",		/* vmexit on halt isns */
@@ -418,8 +418,8 @@ main(int argc, char **argv)
 		NULL };
 	int zhargc;
 	nvlist_t *nvl;
-	char *nvbuf;
-	size_t nvbuflen;
+	char *nvbuf = NULL;
+	size_t nvbuflen = 0;
 	char zoneroot[MAXPATHLEN];
 	int zrfd;
 	char *zonename;
@@ -469,8 +469,10 @@ main(int argc, char **argv)
 		nvlist_print(stdout, nvl);
 	}
 
-	if (nvlist_pack(nvl, &nvbuf, &nvbuflen, NV_ENCODE_XDR, 0) != 0) {
-		(void) printf("Error: failed to pack nvlist\n");
+	err = nvlist_pack(nvl, &nvbuf, &nvbuflen, NV_ENCODE_XDR, 0);
+	if (err != 0) {
+		(void) printf("Error: failed to pack nvlist: %s\n",
+		    strerror(err));
 		return (1);
 	}
 
