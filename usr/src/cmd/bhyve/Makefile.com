@@ -26,6 +26,7 @@ SRCS =	acpi.c			\
 	inout.c			\
 	ioapic.c		\
 	mem.c			\
+	mevent.c		\
 	mptbl.c			\
 	pci_ahci.c		\
 	pci_e82545.c		\

@@ -70,14 +70,7 @@ __FBSDID("$FreeBSD$");
 #include <poll.h>
 #endif
 
-#ifndef	__FreeBSD__
-#include <bhyve.h>
-
-#include "bhyverun.h"
-#endif
-#ifdef	__FreeBSD__
 #include "mevent.h"
-#endif
 #include "uart_emul.h"
 
 #define	COM1_BASE	0x3F8
@@ -131,7 +124,7 @@ struct ttyfd {
 
 struct uart_softc {
 	pthread_mutex_t mtx;	/* protects all softc elements */
-	uint8_t data;		/* Data register (R/W) */
+	uint8_t	data;		/* Data register (R/W) */
 	uint8_t ier;		/* Interrupt enable register (R/W) */
 	uint8_t lcr;		/* Line control register (R/W) */
 	uint8_t mcr;		/* Modem control register (R/W) */
@@ -144,9 +137,7 @@ struct uart_softc {
 	uint8_t dlh;		/* Baudrate divisor latch MSB */
 
 	struct fifo rxfifo;
-#ifdef	__FreeBSD__
 	struct mevent *mev;
-#endif
 
 	struct ttyfd tty;
 #ifndef	__FreeBSD__
@@ -164,12 +155,8 @@ struct uart_softc {
 	uart_intr_func_t intr_deassert;
 };
 
-#ifdef	__FreeBSD__
 static void uart_drain(int fd, enum ev_type ev, void *arg);
-#else
-static void uart_tty_drain(struct uart_softc *sc);
 static int uart_sock_drain(struct uart_softc *sc);
-#endif
 
 static void
 ttyclose(void)
@@ -227,9 +214,7 @@ rxfifo_reset(struct uart_softc *sc, int size)
 	char flushbuf[32];
 	struct fifo *fifo;
 	ssize_t nread;
-#ifdef	__FreeBSD__
 	int error;
-#endif
  
 	fifo = &sc->rxfifo;
 	bzero(fifo, sizeof(struct fifo));
@@ -245,14 +230,12 @@ rxfifo_reset(struct uart_softc *sc, int size)
 				break;
 		}
 
-#ifdef	__FreeBSD__
 		/*
 		 * Enable mevent to trigger when new characters are available
 		 * on the tty fd.
 		 */
 		error = mevent_enable(sc->mev);
 		assert(error == 0);
-#endif
 	}
 }
 
@@ -269,9 +252,7 @@ static int
 rxfifo_putchar(struct uart_softc *sc, uint8_t ch)
 {
 	struct fifo *fifo;
-#ifdef	__FreeBSD__
 	int error;
-#endif
 
 	fifo = &sc->rxfifo;
 
@@ -281,13 +262,11 @@ rxfifo_putchar(struct uart_softc *sc, uint8_t ch)
 		fifo->num++;
 		if (!rxfifo_available(sc)) {
 			if (sc->tty.opened) {
-#ifdef	__FreeBSD__
 				/*
 				 * Disable mevent callback if the FIFO is full.
 				 */
 				error = mevent_disable(sc->mev);
 				assert(error == 0);
-#endif
 			}
 		}
 		return (0);
@@ -299,10 +278,7 @@ static int
 rxfifo_getchar(struct uart_softc *sc)
 {
 	struct fifo *fifo;
-	int c, wasfull;
-#ifdef	__FreeBSD__
-	int error;
-#endif
+	int c, error, wasfull;
 
 	wasfull = 0;
 	fifo = &sc->rxfifo;
@@ -314,10 +290,8 @@ rxfifo_getchar(struct uart_softc *sc)
 		fifo->num--;
 		if (wasfull) {
 			if (sc->tty.opened) {
-#ifdef	__FreeBSD__
 				error = mevent_enable(sc->mev);
 				assert(error == 0);
-#endif
 			}
 		}
 		return (c);
@@ -337,10 +311,8 @@ static void
 uart_opentty(struct uart_softc *sc)
 {
 	ttyopen(&sc->tty);
-#ifdef	__FreeBSD__
 	sc->mev = mevent_add(sc->tty.fd, EVF_READ, uart_drain, sc);
 	assert(sc->mev != NULL);
-#endif
 }
 
 static uint8_t
@@ -428,7 +400,6 @@ uart_toggle_intr(struct uart_softc *sc)
 		(*sc->intr_assert)(sc->arg);
 }
 
-#ifdef	__FreeBSD__
 static void
 uart_drain(int fd, enum ev_type ev, void *arg)
 {
@@ -443,30 +414,6 @@ uart_drain(int fd, enum ev_type ev, void *arg)
 	/*
 	 * This routine is called in the context of the mevent thread
 	 * to take out the softc lock to protect against concurrent
-	 * access from a vCPU i/o exit
-	 */
-	pthread_mutex_lock(&sc->mtx);
-
-	if ((sc->mcr & MCR_LOOPBACK) != 0) {
-		(void) ttyread(&sc->tty);
-	} else {
-		while (rxfifo_available(sc) &&
-		       ((ch = ttyread(&sc->tty)) != -1)) {
-			rxfifo_putchar(sc, ch);
-		}
-		uart_toggle_intr(sc);
-	}
-
-	pthread_mutex_unlock(&sc->mtx);
-}
-#else
-static void
-uart_tty_drain(struct uart_softc *sc)
-{
-	int ch;
-
-	/*
-	 * Take the softc lock to protect against concurrent
 	 * access from a vCPU i/o exit
 	 */
 	pthread_mutex_lock(&sc->mtx);
@@ -515,9 +462,7 @@ uart_sock_drain(struct uart_softc *sc)
 				break;
 			}
 
-			if (rxfifo_available(sc)) {
-				rxfifo_putchar(sc, ch);
-			}
+			rxfifo_putchar(sc, ch);
 		}
 		uart_toggle_intr(sc);
 	}
@@ -526,7 +471,6 @@ uart_sock_drain(struct uart_softc *sc)
 
 	return (ret);
 }
-#endif
 
 void
 uart_write(struct uart_softc *sc, int offset, uint8_t value)
@@ -736,29 +680,6 @@ done:
 }
 
 #ifndef	__FreeBSD__
-static void *
-uart_tty_thread(void *param)
-{
-	struct uart_softc *sc = param;
-	pollfd_t pollset;
-
-	pollset.fd = sc->tty.fd;
-	pollset.events = POLLIN | POLLPRI | POLLRDNORM | POLLRDBAND;
-
-	for (;;) {
-		if (poll(&pollset, 1, -1) < 0) {
-			if (errno != EINTR) {
-				perror("poll failed");
-				break;
-			}
-			continue;
-		}
-		uart_tty_drain(sc);
-	}
-
-	return (NULL);
-}
-
 static int
 uart_sock_accept_client(struct uart_softc *sc)
 {
@@ -1033,9 +954,6 @@ uart_sock_backend(struct uart_softc *sc, const char *inopts)
 int
 uart_set_backend(struct uart_softc *sc, const char *opts)
 {
-#ifndef	__FreeBSD__
-	int error;
-#endif
 	int retval;
 #ifndef WITHOUT_CAPSICUM
 	cap_rights_t rights;
@@ -1084,13 +1002,8 @@ uart_set_backend(struct uart_softc *sc, const char *opts)
 	}
 #endif
 
-	if (retval == 0) {
+	if (retval == 0)
 		uart_opentty(sc);
-#ifndef	__FreeBSD__
-		error = pthread_create(NULL, NULL, uart_tty_thread, sc);
-		assert(error == 0);
-#endif
-	}
 
 	return (retval);
 }

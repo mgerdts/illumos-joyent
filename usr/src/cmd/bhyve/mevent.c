@@ -24,6 +24,7 @@
  * SUCH DAMAGE.
  *
  * $FreeBSD$
+ * Copyright 2018 Joyent, Inc.
  */
 
 /*
@@ -47,7 +48,13 @@ __FBSDID("$FreeBSD$");
 #ifndef WITHOUT_CAPSICUM
 #include <sys/capsicum.h>
 #endif
+#ifdef __FreeBSD__
 #include <sys/event.h>
+#else
+#include <port.h>
+#include <sys/poll.h>
+#include <sys/queue.h>
+#endif
 #include <sys/time.h>
 
 #include <pthread.h>
@@ -61,6 +68,13 @@ __FBSDID("$FreeBSD$");
 #define	MEV_ENABLE	2
 #define	MEV_DISABLE	3
 #define	MEV_DEL_PENDING	4
+
+#ifndef LIST_FREACH_SAFE
+#define	LIST_FOREACH_SAFE(var, head, field, tvar)			\
+	for ((var) = LIST_FIRST((head));				\
+	    (var) && ((tvar) = LIST_NEXT((var), field), 1);		\
+	    (var) = (tvar))
+#endif
 
 extern char *vmname;
 
@@ -124,7 +138,7 @@ mevent_notify(void)
 		write(mevent_pipefd[1], &c, 1);
 	}
 }
-
+#ifdef __FreeBSD__
 static int
 mevent_kq_filter(struct mevent *mevp)
 {
@@ -243,6 +257,60 @@ mevent_handle(struct kevent *kev, int numev)
 		(*mevp->me_func)(mevp->me_fd, mevp->me_type, mevp->me_param);
 	}
 }
+
+#else /* __FreeBSD__ */
+
+static void
+mevent_update_port(int portfd)
+{
+	struct mevent *mevp, *tmpp;
+	int err;
+
+	mevent_qlock();
+
+	LIST_FOREACH_SAFE(mevp, &change_head, me_list, tmpp) {
+		if (mevp->me_closefd) {
+			/*
+			 * A close of the file descriptor will remove the
+			 * event
+			 */
+			(void) close(mevp->me_fd);
+		} else if (mevp->me_type == EVF_READ) {
+			if (mevp->me_state == MEV_ADD) {
+				err = port_associate(portfd, PORT_SOURCE_FD,
+				    mevp->me_fd, POLLIN, mevp);
+			} else {
+				err = port_dissociate(portfd, PORT_SOURCE_FD,
+				    mevp->me_fd);
+			}
+		} else {
+			(void) fprintf(stderr,
+			    "%s: unhandled type %d state %d\n", __func__,
+			    mevp->me_type, mevp->me_state);
+			abort();
+		}
+
+		mevp->me_cq = 0;
+		LIST_REMOVE(mevp, me_list);
+
+		if (mevp->me_state == MEV_DEL_PENDING) {
+			free(mevp);
+		} else {
+			LIST_INSERT_HEAD(&global_head, mevp, me_list);
+		}
+	}
+
+	mevent_qunlock();
+}
+
+static void
+mevent_handle_pe(port_event_t *pe)
+{
+	struct mevent *mevp = pe->portev_user;
+
+	(*mevp->me_func)(mevp->me_fd, mevp->me_type, mevp->me_param);
+}
+#endif
 
 struct mevent *
 mevent_add(int tfd, enum ev_type type,
@@ -400,11 +468,16 @@ mevent_set_name(void)
 void
 mevent_dispatch(void)
 {
+#ifdef __FreeBSD__
 	struct kevent changelist[MEVENT_MAX];
 	struct kevent eventlist[MEVENT_MAX];
 	struct mevent *pipev;
 	int mfd;
 	int numev;
+#else
+	struct mevent *pipev;
+	int portfd;
+#endif
 	int ret;
 #ifndef WITHOUT_CAPSICUM
 	cap_rights_t rights;
@@ -413,8 +486,13 @@ mevent_dispatch(void)
 	mevent_tid = pthread_self();
 	mevent_set_name();
 
+#ifdef __FreeBSD__
 	mfd = kqueue();
 	assert(mfd > 0);
+#else
+	portfd = port_create();
+	assert(portfd >= 0);
+#endif
 
 #ifndef WITHOUT_CAPSICUM
 	cap_rights_init(&rights, CAP_KQUEUE);
@@ -448,6 +526,7 @@ mevent_dispatch(void)
 	assert(pipev != NULL);
 
 	for (;;) {
+#ifdef __FreeBSD__
 		/*
 		 * Build changelist if required.
 		 * XXX the changelist can be put into the blocking call
@@ -474,5 +553,22 @@ mevent_dispatch(void)
 		 * Handle reported events
 		 */
 		mevent_handle(eventlist, ret);
+
+#else /* __FreeBSD__ */
+		port_event_t pev;
+
+		/* Handle any pending updates */
+		mevent_update_port(portfd);
+
+		/* Block awaiting events */
+		ret = port_get(portfd, &pev, NULL);
+		if (ret != 0 && errno != EINTR) {
+			perror("Error return from port_get");
+			continue;
+		}
+
+		/* Handle reported event */
+		mevent_handle_pe(&pev);
+#endif /* __FreeBSD__ */
 	}			
 }

@@ -82,9 +82,7 @@ __FBSDID("$FreeBSD$");
 #include "fwctl.h"
 #include "ioapic.h"
 #include "mem.h"
-#ifdef	__FreeBSD__
 #include "mevent.h"
-#endif
 #include "mptbl.h"
 #include "pci_emul.h"
 #include "pci_irq.h"
@@ -1108,15 +1106,13 @@ main(int argc, char *argv[])
 	/*
 	 * Head off to the main event dispatch loop
 	 */
-#ifdef	__FreeBSD__
 	mevent_dispatch();
-#else
+
 	if (vm_started_cb != NULL) {
 		vm_started_cb();
 	}
 
 	pthread_exit(NULL);
-#endif
 
 	exit(1);
 }
