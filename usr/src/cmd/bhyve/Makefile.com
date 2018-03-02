@@ -64,6 +64,10 @@ SRCS =	acpi.c			\
 
 OBJS = $(SRCS:.c=.o)
 
+MEVENT_TEST_PROG = mevent_test
+MEVENT_TEST_SRCS = mevent.c mevent_test.c
+MEVENT_TEST_OBJS = $(MEVENT_TEST_SRCS:.c=.o)
+
 include ../../Makefile.cmd
 include ../../Makefile.ctf
 
@@ -89,11 +93,14 @@ POST_PROCESS += ; $(GENSETDEFS) $@
 # Real main is in zhyve.c
 bhyverun.o :=	CPPFLAGS += -Dmain=bhyve_main
 
-all: $(PROG)
+all: $(PROG) $(MEVENT_TEST_PROG)
 
 $(PROG): $(OBJS)
 	$(LINK.c) -o $@ $(OBJS) $(LDFLAGS) $(LDLIBS)
 	$(POST_PROCESS)
+
+$(MEVENT_TEST_PROG): $(MEVENT_TEST_OBJS)
+	$(LINK.c) -o $@ $(MEVENT_TEST_OBJS) -lsocket
 
 install: all $(ROOTUSRSBINPROG)
 

@@ -53,6 +53,7 @@ __FBSDID("$FreeBSD$");
 #else
 #include <port.h>
 #include <sys/poll.h>
+#include <sys/siginfo.h>
 #include <sys/queue.h>
 #endif
 #include <sys/time.h>
@@ -87,12 +88,21 @@ struct mevent {
 	void	(*me_func)(int, enum ev_type, void *);
 #define me_msecs me_fd
 	int	me_fd;
+#ifdef __FreeBSD__
 	int	me_timid;
+#else
+	timer_t me_timid;
+#endif
 	enum ev_type me_type;
 	void    *me_param;
 	int	me_cq;
 	int	me_state;
 	int	me_closefd;
+#ifndef __FreeBSD__
+	port_notify_t	me_notify;
+	struct sigevent	me_sigev;
+	boolean_t 	me_auto_requeue;
+#endif
 	LIST_ENTRY(mevent) me_list;			   
 };
 
@@ -261,33 +271,116 @@ mevent_handle(struct kevent *kev, int numev)
 #else /* __FreeBSD__ */
 
 static void
+mevent_update_one(struct mevent *mevp)
+{
+	int portfd = mevp->me_notify.portnfy_port;
+
+	switch (mevp->me_type) {
+	case EVF_READ:
+	case EVF_WRITE:
+		mevp->me_auto_requeue = B_FALSE;
+
+		switch (mevp->me_state) {
+		case MEV_ADD:
+		case MEV_ENABLE:
+		{
+			int events;
+
+			events = (mevp->me_type == EVF_READ) ? POLLIN : POLLOUT;
+
+			if (port_associate(portfd, PORT_SOURCE_FD, mevp->me_fd,
+			    events, mevp) != 0) {
+				(void) fprintf(stderr,
+				    "port_associate fd %d %p failed: %s\n",
+				    mevp->me_fd, mevp, strerror(errno));
+			}
+			return;
+		}
+		case MEV_DISABLE:
+		case MEV_DEL_PENDING:
+			if (port_dissociate(portfd, PORT_SOURCE_FD,
+			    mevp->me_fd) != 0) {
+				(void) fprintf(stderr,
+				    "port_dissociate fd %d %p failed: %s\n",
+				    mevp->me_fd, mevp, strerror(errno));
+			}
+			return;
+		default:
+			goto abort;
+		}
+
+	case EVF_TIMER:
+		mevp->me_auto_requeue = B_TRUE;
+
+		switch (mevp->me_state) {
+		case MEV_ADD:
+		case MEV_ENABLE:
+		{
+			struct itimerspec it = { 0 };
+
+			mevp->me_sigev.sigev_notify = SIGEV_PORT;
+			mevp->me_sigev.sigev_value.sival_ptr = &mevp->me_notify;
+
+			if (timer_create(CLOCK_REALTIME, &mevp->me_sigev,
+			    &mevp->me_timid) != 0) {
+				(void) fprintf(stderr,
+				    "timer_create failed: %s", strerror(errno));
+				return;
+			}
+
+			/* The first timeout */
+			it.it_value.tv_sec = mevp->me_msecs / MILLISEC;
+			it.it_value.tv_nsec =
+				MSEC2NSEC(mevp->me_msecs % MILLISEC);
+			/* Repeat at the same interval */
+			it.it_interval = it.it_value;
+
+			if (timer_settime(mevp->me_timid, 0, &it, NULL) != 0) {
+				(void) fprintf(stderr, "timer_settime failed: "
+				    "%s", strerror(errno));
+			}
+			return;
+		}
+		case MEV_DISABLE:
+		case MEV_DEL_PENDING:
+			if (timer_delete(mevp->me_timid) != 0) {
+				(void) fprintf(stderr, "timer_delete failed: "
+				    "%s", strerror(errno));
+			}
+			return;
+		default:
+			goto abort;
+		}
+	default:
+		/* XXX No test program for EVF_SIGNAL, save that for later */
+		goto abort;
+	}
+
+abort:
+	(void) fprintf(stderr, "%s: unhandled type %d state %d\n", __func__,
+	    mevp->me_type, mevp->me_state);
+	abort();
+}
+
+static void
 mevent_update_port(int portfd)
 {
 	struct mevent *mevp, *tmpp;
-	int err;
 
 	mevent_qlock();
 
 	LIST_FOREACH_SAFE(mevp, &change_head, me_list, tmpp) {
+		mevp->me_notify.portnfy_port = portfd;
+		mevp->me_notify.portnfy_user = mevp;
 		if (mevp->me_closefd) {
 			/*
 			 * A close of the file descriptor will remove the
 			 * event
 			 */
 			(void) close(mevp->me_fd);
-		} else if (mevp->me_type == EVF_READ) {
-			if (mevp->me_state == MEV_ADD) {
-				err = port_associate(portfd, PORT_SOURCE_FD,
-				    mevp->me_fd, POLLIN, mevp);
-			} else {
-				err = port_dissociate(portfd, PORT_SOURCE_FD,
-				    mevp->me_fd);
-			}
+			mevp->me_fd = -1;
 		} else {
-			(void) fprintf(stderr,
-			    "%s: unhandled type %d state %d\n", __func__,
-			    mevp->me_type, mevp->me_state);
-			abort();
+			mevent_update_one(mevp);
 		}
 
 		mevp->me_cq = 0;
@@ -309,6 +402,12 @@ mevent_handle_pe(port_event_t *pe)
 	struct mevent *mevp = pe->portev_user;
 
 	(*mevp->me_func)(mevp->me_fd, mevp->me_type, mevp->me_param);
+
+	mevent_qlock();
+	if (!mevp->me_cq && !mevp->me_auto_requeue) {
+		mevent_update_one(mevp);
+	}
+	mevent_qunlock();
 }
 #endif
 
