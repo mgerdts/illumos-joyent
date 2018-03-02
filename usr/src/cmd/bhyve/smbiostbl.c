@@ -834,9 +834,9 @@ smbios_parse(const char *opts)
 	char *lasts;
 	char *token;
 	char *end;
-	int type;
+	long type;
 	struct {
-		char *key;
+		const char *key;
 		const char **targetp;
 	} type1_map[] = {
 		{ "manufacturer", &smbios_type1_strings[0] },

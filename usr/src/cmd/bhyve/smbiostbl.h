@@ -24,6 +24,8 @@
  * SUCH DAMAGE.
  *
  * $FreeBSD$
+ *
+ * Copyright 2018 Joyent, Inc.
  */
 
 #ifndef _SMBIOSTBL_H_

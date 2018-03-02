@@ -18,7 +18,6 @@ include $(SRC)/cmd/Makefile.cmd.64
 PROGS =		attach detach statechange uninstall
 
 PROG1 =		boot
-OBJS1 =		boot.o
 PROGS +=	$(PROG1)
 OBJS +=		$(OBJS1)
 CLEANFILES +=	$(PROG1) $(OBJS1)
@@ -34,11 +33,7 @@ $(ROOTPROGS) :=	FILEMODE = 755
 
 all: $(PROGS)
 
-$(PROG1): $(OBJS1)
-	$(LINK.c) -o $@ $(OBJS1) $(LDFLAGS) $(LDLIBS)
-	$(POST_PROCESS)
-
-install: $(ROOTPROGS) $(ROOTXMLDOCS) $(ROOTTEMPLATES)
+install: $(PROGS) $(ROOTPROGS) $(ROOTXMLDOCS) $(ROOTTEMPLATES)
 
 clean:
 	$(RM) $(CLEANFILES)
