@@ -334,7 +334,7 @@ ppt_bar_wipe(struct pptdev *ppt)
 
 	for (i = 0; i < PCI_BASE_NUM; i++) {
 		struct pptbar *pbar = &ppt->pptd_bars[i];
-		if (pbar->type == PCI_ADDR_IO) {
+		if (pbar->type == PCI_ADDR_IO && pbar->io_handle != NULL) {
 			ddi_regs_map_free(&pbar->io_handle);
 		}
 	}
