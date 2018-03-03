@@ -14,8 +14,11 @@
 #
 
 TSTDIR =	mevent
-EXETESTS =	read.requeue.exe \
-		read.pause.exe
+EXETESTS = \
+		read.disable.exe \
+		read.pause.exe \
+		read.requeue.exe \
+
 SHTESTS =
 SUPOBJS =	mevent.o testlib.o
 VPATH =		$(SRC)/cmd/bhyve

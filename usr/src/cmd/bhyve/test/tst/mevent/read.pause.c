@@ -135,7 +135,7 @@ main(int argc, const char *argv[])
 		if (i == pauseat) {
 			timer = mevent_add(10, EVF_TIMER, tick,
 			    &cookie[pauseat]);
-			ASSERT_PTR_NEQ(("mevent_add timer"), evp, NULL);
+			ASSERT_PTR_NEQ(("mevent_add timer"), timer, NULL);
 			VERBOSE(("disable munch"));
 			mevent_disable(evp);
 		}

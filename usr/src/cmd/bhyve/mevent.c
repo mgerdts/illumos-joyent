@@ -102,6 +102,7 @@ struct mevent {
 	port_notify_t	me_notify;
 	struct sigevent	me_sigev;
 	boolean_t 	me_auto_requeue;
+	boolean_t	me_in_handler;
 #endif
 	LIST_ENTRY(mevent) me_list;			   
 };
@@ -298,11 +299,15 @@ mevent_update_one(struct mevent *mevp)
 		}
 		case MEV_DISABLE:
 		case MEV_DEL_PENDING:
+			/*
+			 * A disable that comes in while an event is being
+			 * handled will result in an ENOENT.
+			 */
 			if (port_dissociate(portfd, PORT_SOURCE_FD,
-			    mevp->me_fd) != 0) {
-				(void) fprintf(stderr,
-				    "port_dissociate fd %d %p failed: %s\n",
-				    mevp->me_fd, mevp, strerror(errno));
+			    mevp->me_fd) != 0 && errno != ENOENT) {
+				(void) fprintf(stderr, "port_dissociate "
+				    "portfd %d fd %d mevp %p failed: %s\n",
+				    portfd, mevp->me_fd, mevp, strerror(errno));
 			}
 			return;
 		default:
@@ -400,6 +405,8 @@ static void
 mevent_handle_pe(port_event_t *pe)
 {
 	struct mevent *mevp = pe->portev_user;
+
+	mevent_qunlock();
 
 	(*mevp->me_func)(mevp->me_fd, mevp->me_type, mevp->me_param);
 
