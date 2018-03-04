@@ -15,13 +15,13 @@
 
 TSTDIR =	mevent
 EXETESTS = \
+		lists.delete.exe \
 		read.disable.exe \
 		read.pause.exe \
 		read.requeue.exe \
 
 SHTESTS =
 SUPOBJS =	mevent.o testlib.o
-VPATH =		$(SRC)/cmd/bhyve
 
 CLOBBERFILES =	$(EXETESTS)
 

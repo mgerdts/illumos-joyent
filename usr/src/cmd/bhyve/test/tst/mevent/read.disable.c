@@ -10,7 +10,7 @@
  */
 
 /*
- * Copyright (c) 2018 Joyent, Inc.  All rights reserved.
+ * Copyright (c) 2018 Joyent, Inc.
  */
 
 /*
@@ -124,6 +124,7 @@ main(int argc, const char *argv[])
 	read_event = mevent_add(pipefds[0], EVF_READ, munch, msg);
 	ASSERT_PTR_NEQ(("mevent_add pipefd"), read_event, NULL);
 
+	pthread_mutex_lock(&mtx);
 	written = write(pipefds[1], msg, strlen(msg));
 	if (written < 0) {
 		FAIL_ERRNO("bad write");
@@ -133,7 +134,6 @@ main(int argc, const char *argv[])
 	/*
 	 * Wait for it to be read
 	 */
-	pthread_mutex_lock(&mtx);
 	pthread_cond_wait(&cv, &mtx);
 	ASSERT_INT_EQ(("wrong lastwake"), lastwake, CB_READ);
 	pthread_mutex_unlock(&mtx);
@@ -145,6 +145,7 @@ main(int argc, const char *argv[])
 	timer = mevent_add(50, EVF_TIMER, tick, msg);
 	ASSERT_PTR_NEQ(("mevent_add timer"), timer, NULL);
 
+	pthread_mutex_lock(&mtx);
 	written = write(pipefds[1], msg, strlen(msg));
 	if (written < 0) {
 		FAIL_ERRNO("bad write");
@@ -154,7 +155,6 @@ main(int argc, const char *argv[])
 	/*
 	 * Wait for timer to expire
 	 */
-	pthread_mutex_lock(&mtx);
 	pthread_cond_wait(&cv, &mtx);
 	ASSERT_INT_EQ(("wrong lastwake"), lastwake, CB_TIMER);
 	pthread_mutex_unlock(&mtx);

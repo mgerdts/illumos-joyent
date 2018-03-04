@@ -10,7 +10,7 @@
  */
 
 /*
- * Copyright (c) 2018 Joyent, Inc.  All rights reserved.
+ * Copyright (c) 2018 Joyent, Inc.
  */
 
 /*
@@ -92,6 +92,7 @@ main(int argc, const char *argv[])
 	for (int i = 0; cookie[i] != '\0'; i++) {
 		ssize_t written;
 
+		pthread_mutex_lock(&mtx);
 		written = write(pipefds[1], cookie + i, 1);
 		if (written < 0) {
 			FAIL_ERRNO("bad write");
@@ -99,7 +100,6 @@ main(int argc, const char *argv[])
 		ASSERT_INT64_EQ(("write byte %d of cookie", i), written, 1);
 
 		/* Wait for it to be read */
-		pthread_mutex_lock(&mtx);
 		pthread_cond_wait(&cv, &mtx);
 		pthread_mutex_unlock(&mtx);
 	}

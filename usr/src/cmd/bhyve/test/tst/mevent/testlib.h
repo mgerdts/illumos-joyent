@@ -10,7 +10,7 @@
  */
 
 /*
- * Copyright (c) 2018 Joyent, Inc.  All rights reserved.
+ * Copyright (c) 2018 Joyent, Inc.
  */
 
 #include <assert.h>
@@ -66,6 +66,7 @@
 
 #define	ASSERT_CHAR_EQ(msg, got, exp)	ASSERT_CMP(msg, got, ==, exp, "%c")
 #define	ASSERT_INT_EQ(msg, got, exp)	ASSERT_CMP(msg, got, ==, exp, "%d")
+#define	ASSERT_INT_NEQ(msg, got, exp)	ASSERT_CMP(msg, got, !=, exp, "%d")
 #define	ASSERT_INT64_EQ(msg, got, exp)	ASSERT_CMP(msg, got, ==, exp, "%ld")
 #define	ASSERT_PTR_EQ(msg, got, exp)	ASSERT_CMP(msg, got, ==, exp, "%p")
 #define	ASSERT_PTR_NEQ(msg, got, exp)	ASSERT_CMP(msg, got, !=, exp, "%p")
@@ -84,3 +85,5 @@ extern boolean_t	testlib_verbose;
 
 extern void start_test(const char *argv0, uint32_t timeout);
 extern void start_event_thread(void);
+extern void test_mevent_count_lists(int *global_cnt, int *change_cnt,
+    int *del_pending_cnt);

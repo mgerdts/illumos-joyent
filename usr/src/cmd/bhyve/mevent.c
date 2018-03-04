@@ -101,8 +101,7 @@ struct mevent {
 #ifndef __FreeBSD__
 	port_notify_t	me_notify;
 	struct sigevent	me_sigev;
-	boolean_t 	me_auto_requeue;
-	boolean_t	me_in_handler;
+	boolean_t	me_auto_requeue;
 #endif
 	LIST_ENTRY(mevent) me_list;			   
 };
@@ -368,7 +367,7 @@ abort:
 }
 
 static void
-mevent_update_port(int portfd)
+mevent_update_pending(int portfd)
 {
 	struct mevent *mevp, *tmpp;
 
@@ -664,7 +663,7 @@ mevent_dispatch(void)
 		port_event_t pev;
 
 		/* Handle any pending updates */
-		mevent_update_port(portfd);
+		mevent_update_pending(portfd);
 
 		/* Block awaiting events */
 		ret = port_get(portfd, &pev, NULL);
