@@ -21,7 +21,7 @@
 
 /*
  * Copyright (c) 2006, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  * Copyright 2014 Nexenta Systems, Inc. All rights reserved.
  */
 
@@ -112,6 +112,10 @@ extern int brand_platform_iter_link(brand_handle_t, int (*)(void *,
     const char *, const char *), void *);
 extern int brand_platform_iter_mounts(brand_handle_t, int (*)(void *,
     const char *, const char *, const char *, const char *), void *);
+
+extern boolean_t brand_res_enabled(brand_handle_t, const char *);
+extern boolean_t brand_resprop_enabled(brand_handle_t, const char *, const
+    char *);
 
 #ifdef	__cplusplus
 }

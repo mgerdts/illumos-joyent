@@ -21,7 +21,7 @@
 
 /*
  * Copyright (c) 2006, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2015, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  * Copyright 2014 Nexenta Systems, Inc. All rights reserved.
  */
 
@@ -45,6 +45,7 @@
 
 #include <libbrand_impl.h>
 #include <libbrand.h>
+#include <libxml/xpath.h>
 
 #define	DTD_ELEM_ATTACH		((const xmlChar *) "attach")
 #define	DTD_ELEM_BOOT		((const xmlChar *) "boot")
@@ -1054,4 +1055,83 @@ next:
 	}
 
 	return (0);
+}
+
+/*
+ * Is the specified resource type enabled?  If NULL is passed as the resource
+ * type, B_TRUE is returned because the global scope is always enabled.
+ */
+boolean_t
+brand_res_enabled(brand_handle_t bh, const char *rt)
+{
+	struct brand_handle *bhp = (struct brand_handle *)bh;
+	char xpquery[MAXNAMELEN * 3];
+	size_t len;
+	xmlXPathContextPtr context;
+	xmlXPathObjectPtr result;
+	boolean_t ret;
+
+	if (rt == NULL) {
+		/* global scope */
+		return (B_TRUE);
+	}
+	len = snprintf(xpquery, sizeof (xpquery),
+	    "/brand/resource[@name='zone' @enabled='true']"
+	    "/resource[@name='%s' @enabled='true']", rt);
+	assert(len < sizeof (xpquery));
+
+	context = xmlXPathNewContext(bhp->bh_config);
+	result = xmlXPathEvalExpression((xmlChar *)xpquery, context);
+
+	/*
+	 * If the xpath expression returned any results, the resource type is
+	 */
+	ret = !xmlXPathNodeSetIsEmpty(result->nodesetval);
+
+	xmlXPathFreeObject(result);
+	xmlXPathFreeContext(context);
+
+	return (ret);
+}
+
+/*
+ * Are the specified resource type and the property type within it enabled?
+ * Pass NULL for resource type in the global scope.
+ */
+boolean_t
+brand_resprop_enabled(brand_handle_t bh, const char *rt, const char *pt)
+{
+	struct brand_handle *bhp = (struct brand_handle *)bh;
+	char xpquery[MAXNAMELEN * 3];
+	size_t len;
+	xmlXPathContextPtr context;
+	xmlXPathObjectPtr result;
+	boolean_t ret;
+
+	if (rt == NULL) {
+		/* global scope */
+		len = snprintf(xpquery, sizeof (xpquery),
+		    "/brand/resource[@name='zone' @enabled='true']"
+		    "/property[@name='%s' @enabled='true']", pt);
+	} else {
+		len = snprintf(xpquery, sizeof (xpquery),
+		    "/brand/resource[@name='zone' @enabled='true']"
+		    "/resource[@name='%s' @enabled='true']"
+		    "/property[@name='%s' @enabled='true']", rt, pt);
+	}
+	assert(len < sizeof (xpquery));
+
+	context = xmlXPathNewContext(bhp->bh_config);
+	result = xmlXPathEvalExpression((xmlChar *)xpquery, context);
+
+	/*
+	 * If the xpath expression returned any results, the property type is
+	 * enabled.
+	 */
+	ret = !xmlXPathNodeSetIsEmpty(result->nodesetval);
+
+	xmlXPathFreeObject(result);
+	xmlXPathFreeContext(context);
+
+	return (ret);
 }

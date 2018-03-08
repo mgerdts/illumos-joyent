@@ -111,6 +111,21 @@ extern int lex_lineno;
 #define	ONE_MB		1048576
 
 /*
+ * Used by most info_<restype>() to return without trying to print disabled
+ * resources.  If 'info <restype>' was used on a disabled resource type, print
+ * an error message saying that the resource type is not supported in the brand.
+ */
+#define	MAYBE_WARN_AND_RETURN_UNLESS_RES_ENABLED(rt, cmd) \
+	if (!res_enabled(rt)) { \
+		if (cmd->cmd_prop_nv_pairs > 0) { \
+			(void) fprintf(stderr, gettext( \
+			    "Resource type %s not supported in this brand"), \
+			    rt_to_str(rt)); \
+		} \
+		return; \
+	}
+
+/*
  * Each SHELP_ should be a simple string.
  */
 
@@ -2299,6 +2314,13 @@ add_resource(cmd_t *cmd)
 		goto bad;
 	}
 
+	if (!brand_res_enabled(brand, rt_to_str(cmd->cmd_res_type))) {
+		zerr(gettext("Resource type %s is not allowed in this brand."),
+		    rt_to_str(cmd->cmd_res_type));
+		saw_error = B_TRUE;
+		return;
+	}
+
 	switch (type) {
 	case RT_FS:
 		bzero(&in_progress_fstab, sizeof (in_progress_fstab));
@@ -2595,6 +2617,14 @@ add_property(cmd_t *cmd)
 		return;
 	}
 
+	if (!brand_resprop_enabled(brand, rt_to_str(res_type),
+	    pt_to_str(prop_type))) {
+		zerr(gettext("Property type %s is not allowed %s resources in "
+		    "this brand."), pt_to_str(prop_type), rt_to_str(res_type));
+		saw_error = B_TRUE;
+		return;
+	}
+
 	if (cmd->cmd_prop_nv_pairs != 1) {
 		long_usage(CMD_ADD, B_TRUE);
 		return;
@@ -2777,6 +2807,7 @@ add_func(cmd_t *cmd)
 
 	if (initialize(B_TRUE) != Z_OK)
 		return;
+
 	if (global_scope) {
 		if (gz_invalid_resource(cmd->cmd_res_type)) {
 			zerr(gettext("Cannot add a %s resource to the "
@@ -4735,6 +4766,14 @@ set_func(cmd_t *cmd)
 		res_type = resource_scope;
 	}
 
+	if (!brand_resprop_enabled(brand, rt_to_str(res_type),
+	    pt_to_str(prop_type))) {
+		zerr(gettext("Property type %s is not allowed %s resources in "
+		    "this brand."), pt_to_str(prop_type), rt_to_str(res_type));
+		saw_error = B_TRUE;
+		return;
+	}
+
 	if (force_set) {
 		if (res_type != RT_ZONEPATH) {
 			zerr(gettext("Only zonepath setting can be forced."));
@@ -5414,10 +5453,36 @@ set_func(cmd_t *cmd)
 	}
 }
 
+static boolean_t
+resprop_enabled(int rt, int pt)
+{
+	const char *rtstr;
+
+	if (rt == RT_UNKNOWN && global_scope) {
+		rtstr = NULL;
+	} else {
+		rtstr = rt_to_str(rt);
+	}
+
+	return (brand_resprop_enabled(brand, rtstr, pt_to_str(pt)));
+}
+
+static boolean_t
+res_enabled(int rt)
+{
+	if (rt == RT_UNKNOWN && global_scope) {
+		return (B_TRUE);
+	}
+	return (brand_res_enabled(brand, rt_to_str(rt)));
+}
+
 static void
-output_prop(FILE *fp, int pnum, char *pval, boolean_t print_notspec)
+output_prop(FILE *fp, int rnum, int pnum, char *pval, boolean_t print_notspec)
 {
 	char *qstr;
+
+	if (!resprop_enabled(rnum, pnum))
+		return;
 
 	if (*pval != '\0') {
 		qstr = quoteit(pval);
@@ -5432,10 +5497,23 @@ output_prop(FILE *fp, int pnum, char *pval, boolean_t print_notspec)
 		    pt_to_str(pnum));
 }
 
+#define	RET_ERR_UNLESS_RESPROP_ENABLED(rt, pt) \
+	if (!resprop_enabled(rt, pt)) { \
+		zerr(gettext("Property type %s is not allowed %s resources " \
+		    "in this brand."), pt_to_str(pt), \
+		    (rt == RT_UNKNOWN && global_scope) ? "global" : \
+		    rt_to_str(rt)); \
+		saw_error = B_TRUE; \
+		return; \
+	}
+
 static void
 info_zonename(zone_dochandle_t handle, FILE *fp)
 {
 	char zonename[ZONENAME_MAX];
+
+	if (!resprop_enabled(RT_UNKNOWN, PT_ZONENAME))
+		return;
 
 	if (zonecfg_get_name(handle, zonename, sizeof (zonename)) == Z_OK)
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_ZONENAME),
@@ -5449,6 +5527,9 @@ static void
 info_zonepath(zone_dochandle_t handle, FILE *fp)
 {
 	char zonepath[MAXPATHLEN];
+
+	if (!resprop_enabled(RT_UNKNOWN, PT_ZONEPATH))
+		return;
 
 	if (zonecfg_get_zonepath(handle, zonepath, sizeof (zonepath)) == Z_OK)
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_ZONEPATH),
@@ -5464,6 +5545,9 @@ info_brand(zone_dochandle_t handle, FILE *fp)
 {
 	char brand[MAXNAMELEN];
 
+	if (!resprop_enabled(RT_UNKNOWN, PT_BRAND))
+		return;
+
 	if (zonecfg_get_brand(handle, brand, sizeof (brand)) == Z_OK)
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_BRAND),
 		    brand);
@@ -5478,6 +5562,9 @@ info_autoboot(zone_dochandle_t handle, FILE *fp)
 	boolean_t autoboot;
 	int err;
 
+	if (!resprop_enabled(RT_UNKNOWN, PT_AUTOBOOT))
+		return;
+
 	if ((err = zonecfg_get_autoboot(handle, &autoboot)) == Z_OK)
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_AUTOBOOT),
 		    autoboot ? "true" : "false");
@@ -5491,6 +5578,9 @@ info_pool(zone_dochandle_t handle, FILE *fp)
 	char pool[MAXNAMELEN];
 	int err;
 
+	if (!resprop_enabled(RT_UNKNOWN, PT_POOL))
+		return;
+
 	if ((err = zonecfg_get_pool(handle, pool, sizeof (pool))) == Z_OK)
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_POOL), pool);
 	else
@@ -5502,6 +5592,9 @@ info_limitpriv(zone_dochandle_t handle, FILE *fp)
 {
 	char *limitpriv;
 	int err;
+
+	if (!resprop_enabled(RT_UNKNOWN, PT_LIMITPRIV))
+		return;
 
 	if ((err = zonecfg_get_limitpriv(handle, &limitpriv)) == Z_OK) {
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_LIMITPRIV),
@@ -5518,6 +5611,9 @@ info_bootargs(zone_dochandle_t handle, FILE *fp)
 	char bootargs[BOOTARGS_MAX];
 	int err;
 
+	if (!resprop_enabled(RT_UNKNOWN, PT_BOOTARGS))
+		return;
+
 	if ((err = zonecfg_get_bootargs(handle, bootargs,
 	    sizeof (bootargs))) == Z_OK) {
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_BOOTARGS),
@@ -5533,6 +5629,9 @@ info_sched(zone_dochandle_t handle, FILE *fp)
 	char sched[MAXNAMELEN];
 	int err;
 
+	if (!resprop_enabled(RT_UNKNOWN, PT_SCHED))
+		return;
+
 	if ((err = zonecfg_get_sched_class(handle, sched, sizeof (sched)))
 	    == Z_OK) {
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_SCHED), sched);
@@ -5546,6 +5645,9 @@ info_iptype(zone_dochandle_t handle, FILE *fp)
 {
 	zone_iptype_t iptype;
 	int err;
+
+	if (!resprop_enabled(RT_UNKNOWN, PT_IPTYPE))
+		return;
 
 	if ((err = zonecfg_get_iptype(handle, &iptype)) == Z_OK) {
 		switch (iptype) {
@@ -5569,6 +5671,9 @@ info_hostid(zone_dochandle_t handle, FILE *fp)
 	char hostidp[HW_HOSTID_LEN];
 	int err;
 
+	if (!resprop_enabled(RT_UNKNOWN, PT_HOSTID))
+		return;
+
 	if ((err = zonecfg_get_hostid(handle, hostidp,
 	    sizeof (hostidp))) == Z_OK) {
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_HOSTID), hostidp);
@@ -5584,6 +5689,9 @@ info_uuid(FILE *fp)
 {
 	uuid_t uuid;
 	char suuid[UUID_PRINTABLE_STRING_LENGTH];
+
+	if (!resprop_enabled(RT_UNKNOWN, PT_UUID))
+		return;
 
 	if (new_uuid[0] != '\0') {
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_UUID), new_uuid);
@@ -5602,6 +5710,9 @@ info_fs_allowed(zone_dochandle_t handle, FILE *fp)
 	char fsallowedp[ZONE_FS_ALLOWED_MAX];
 	int err;
 
+	if (!resprop_enabled(RT_UNKNOWN, PT_FS_ALLOWED))
+		return;
+
 	if ((err = zonecfg_get_fs_allowed(handle, fsallowedp,
 	    sizeof (fsallowedp))) == Z_OK) {
 		(void) fprintf(fp, "%s: %s\n", pt_to_str(PT_FS_ALLOWED),
@@ -5619,10 +5730,10 @@ output_fs(FILE *fp, struct zone_fstab *fstab)
 	zone_fsopt_t *this;
 
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_FS));
-	output_prop(fp, PT_DIR, fstab->zone_fs_dir, B_TRUE);
-	output_prop(fp, PT_SPECIAL, fstab->zone_fs_special, B_TRUE);
-	output_prop(fp, PT_RAW, fstab->zone_fs_raw, B_TRUE);
-	output_prop(fp, PT_TYPE, fstab->zone_fs_type, B_TRUE);
+	output_prop(fp, RT_FS, PT_DIR, fstab->zone_fs_dir, B_TRUE);
+	output_prop(fp, RT_FS, PT_SPECIAL, fstab->zone_fs_special, B_TRUE);
+	output_prop(fp, RT_FS, PT_RAW, fstab->zone_fs_raw, B_TRUE);
+	output_prop(fp, RT_FS, PT_TYPE, fstab->zone_fs_type, B_TRUE);
 	(void) fprintf(fp, "\t%s: [", pt_to_str(PT_OPTIONS));
 	for (this = fstab->zone_fs_options; this != NULL;
 	    this = this->zone_fsopt_next) {
@@ -5641,6 +5752,8 @@ info_fs(zone_dochandle_t handle, FILE *fp, cmd_t *cmd)
 {
 	struct zone_fstab lookup, user;
 	boolean_t output = B_FALSE;
+
+	MAYBE_WARN_AND_RETURN_UNLESS_RES_ENABLED(RT_FS, cmd);
 
 	if (zonecfg_setfsent(handle) != Z_OK)
 		return;
@@ -5681,21 +5794,25 @@ output_net(FILE *fp, struct zone_nwiftab *nwiftab)
 	struct zone_res_attrtab *np;
 
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_NET));
-	output_prop(fp, PT_ADDRESS, nwiftab->zone_nwif_address, B_TRUE);
-	output_prop(fp, PT_ALLOWED_ADDRESS,
+	output_prop(fp, RT_NET, PT_ADDRESS, nwiftab->zone_nwif_address, B_TRUE);
+	output_prop(fp, RT_NET, PT_ALLOWED_ADDRESS,
 	    nwiftab->zone_nwif_allowed_address, B_TRUE);
-	output_prop(fp, PT_DEFROUTER, nwiftab->zone_nwif_defrouter, B_TRUE);
-	output_prop(fp, PT_GNIC, nwiftab->zone_nwif_gnic, B_TRUE);
-	output_prop(fp, PT_MAC, nwiftab->zone_nwif_mac, B_TRUE);
-	output_prop(fp, PT_PHYSICAL, nwiftab->zone_nwif_physical, B_TRUE);
-	output_prop(fp, PT_VLANID, nwiftab->zone_nwif_vlan_id, B_TRUE);
+	output_prop(fp, RT_NET, PT_DEFROUTER, nwiftab->zone_nwif_defrouter,
+	    B_TRUE);
+	output_prop(fp, RT_NET, PT_GNIC, nwiftab->zone_nwif_gnic, B_TRUE);
+	output_prop(fp, RT_NET, PT_MAC, nwiftab->zone_nwif_mac, B_TRUE);
+	output_prop(fp, RT_NET, PT_PHYSICAL, nwiftab->zone_nwif_physical,
+	    B_TRUE);
+	output_prop(fp, RT_NET, PT_VLANID, nwiftab->zone_nwif_vlan_id, B_TRUE);
 
-	for (np = nwiftab->zone_nwif_attrp; np != NULL;
-	    np = np->zone_res_attr_next) {
-		fprintf(fp, "\t%s: (%s=%s,%s=\"%s\")\n",
-		    pt_to_str(PT_NPROP),
-		    pt_to_str(PT_NAME), np->zone_res_attr_name,
-		    pt_to_str(PT_VALUE), np->zone_res_attr_value);
+	if (resprop_enabled(RT_NET, PT_NPROP)) {
+		for (np = nwiftab->zone_nwif_attrp; np != NULL;
+		    np = np->zone_res_attr_next) {
+			fprintf(fp, "\t%s: (%s=%s,%s=\"%s\")\n",
+			    pt_to_str(PT_NPROP),
+			    pt_to_str(PT_NAME), np->zone_res_attr_name,
+			    pt_to_str(PT_VALUE), np->zone_res_attr_value);
+		}
 	}
 }
 
@@ -5704,6 +5821,8 @@ info_net(zone_dochandle_t handle, FILE *fp, cmd_t *cmd)
 {
 	struct zone_nwiftab lookup, user;
 	boolean_t output = B_FALSE;
+
+	MAYBE_WARN_AND_RETURN_UNLESS_RES_ENABLED(RT_NET, cmd);
 
 	if (zonecfg_setnwifent(handle) != Z_OK)
 		return;
@@ -5742,14 +5861,16 @@ output_dev(FILE *fp, struct zone_devtab *devtab)
 	struct zone_res_attrtab *np;
 
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_DEVICE));
-	output_prop(fp, PT_MATCH, devtab->zone_dev_match, B_TRUE);
+	output_prop(fp, RT_DEVICE, PT_MATCH, devtab->zone_dev_match, B_TRUE);
 
-	for (np = devtab->zone_dev_attrp; np != NULL;
-	    np = np->zone_res_attr_next) {
-		fprintf(fp, "\t%s: (%s=%s,%s=\"%s\")\n",
-		    pt_to_str(PT_NPROP),
-		    pt_to_str(PT_NAME), np->zone_res_attr_name,
-		    pt_to_str(PT_VALUE), np->zone_res_attr_value);
+	if (resprop_enabled(RT_DEVICE, PT_NPROP)) {
+		for (np = devtab->zone_dev_attrp; np != NULL;
+		    np = np->zone_res_attr_next) {
+			fprintf(fp, "\t%s: (%s=%s,%s=\"%s\")\n",
+			    pt_to_str(PT_NPROP),
+			    pt_to_str(PT_NAME), np->zone_res_attr_name,
+			    pt_to_str(PT_VALUE), np->zone_res_attr_value);
+		}
 	}
 }
 
@@ -5758,6 +5879,8 @@ info_dev(zone_dochandle_t handle, FILE *fp, cmd_t *cmd)
 {
 	struct zone_devtab lookup, user;
 	boolean_t output = B_FALSE;
+
+	MAYBE_WARN_AND_RETURN_UNLESS_RES_ENABLED(RT_DEVICE, cmd);
 
 	if (zonecfg_setdevent(handle) != Z_OK)
 		return;
@@ -5790,14 +5913,17 @@ output_rctl(FILE *fp, struct zone_rctltab *rctltab)
 	struct zone_rctlvaltab *valptr;
 
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_RCTL));
-	output_prop(fp, PT_NAME, rctltab->zone_rctl_name, B_TRUE);
-	for (valptr = rctltab->zone_rctl_valptr; valptr != NULL;
-	    valptr = valptr->zone_rctlval_next) {
-		fprintf(fp, "\t%s: (%s=%s,%s=%s,%s=%s)\n",
-		    pt_to_str(PT_VALUE),
-		    pt_to_str(PT_PRIV), valptr->zone_rctlval_priv,
-		    pt_to_str(PT_LIMIT), valptr->zone_rctlval_limit,
-		    pt_to_str(PT_ACTION), valptr->zone_rctlval_action);
+	output_prop(fp, RT_RCTL, PT_NAME, rctltab->zone_rctl_name, B_TRUE);
+
+	if (resprop_enabled(RT_RCTL, PT_VALUE)) {
+		for (valptr = rctltab->zone_rctl_valptr; valptr != NULL;
+		    valptr = valptr->zone_rctlval_next) {
+			fprintf(fp, "\t%s: (%s=%s,%s=%s,%s=%s)\n",
+			    pt_to_str(PT_VALUE),
+			    pt_to_str(PT_PRIV), valptr->zone_rctlval_priv,
+			    pt_to_str(PT_LIMIT), valptr->zone_rctlval_limit,
+			    pt_to_str(PT_ACTION), valptr->zone_rctlval_action);
+		}
 	}
 }
 
@@ -5806,6 +5932,8 @@ info_rctl(zone_dochandle_t handle, FILE *fp, cmd_t *cmd)
 {
 	struct zone_rctltab lookup, user;
 	boolean_t output = B_FALSE;
+
+	MAYBE_WARN_AND_RETURN_UNLESS_RES_ENABLED(RT_RCTL, cmd);
 
 	if (zonecfg_setrctlent(handle) != Z_OK)
 		return;
@@ -5834,9 +5962,9 @@ static void
 output_attr(FILE *fp, struct zone_attrtab *attrtab)
 {
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_ATTR));
-	output_prop(fp, PT_NAME, attrtab->zone_attr_name, B_TRUE);
-	output_prop(fp, PT_TYPE, attrtab->zone_attr_type, B_TRUE);
-	output_prop(fp, PT_VALUE, attrtab->zone_attr_value, B_TRUE);
+	output_prop(fp, RT_ATTR, PT_NAME, attrtab->zone_attr_name, B_TRUE);
+	output_prop(fp, RT_ATTR, PT_TYPE, attrtab->zone_attr_type, B_TRUE);
+	output_prop(fp, RT_ATTR, PT_VALUE, attrtab->zone_attr_value, B_TRUE);
 }
 
 static void
@@ -5844,6 +5972,8 @@ info_attr(zone_dochandle_t handle, FILE *fp, cmd_t *cmd)
 {
 	struct zone_attrtab lookup, user;
 	boolean_t output = B_FALSE;
+
+	MAYBE_WARN_AND_RETURN_UNLESS_RES_ENABLED(RT_ATTR, cmd);
 
 	if (zonecfg_setattrent(handle) != Z_OK)
 		return;
@@ -5880,7 +6010,7 @@ static void
 output_ds(FILE *fp, struct zone_dstab *dstab)
 {
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_DATASET));
-	output_prop(fp, PT_NAME, dstab->zone_dataset_name, B_TRUE);
+	output_prop(fp, RT_DATASET, PT_NAME, dstab->zone_dataset_name, B_TRUE);
 }
 
 static void
@@ -5888,6 +6018,8 @@ info_ds(zone_dochandle_t handle, FILE *fp, cmd_t *cmd)
 {
 	struct zone_dstab lookup, user;
 	boolean_t output = B_FALSE;
+
+	MAYBE_WARN_AND_RETURN_UNLESS_RES_ENABLED(RT_DATASET, cmd);
 
 	if (zonecfg_setdsent(handle) != Z_OK)
 		return;
@@ -5919,21 +6051,29 @@ static void
 output_pset(FILE *fp, struct zone_psettab *psettab)
 {
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_DCPU));
-	if (strcmp(psettab->zone_ncpu_min, psettab->zone_ncpu_max) == 0)
-		(void) fprintf(fp, "\t%s: %s\n", pt_to_str(PT_NCPUS),
-		    psettab->zone_ncpu_max);
-	else
-		(void) fprintf(fp, "\t%s: %s-%s\n", pt_to_str(PT_NCPUS),
-		    psettab->zone_ncpu_min, psettab->zone_ncpu_max);
-	if (psettab->zone_importance[0] != '\0')
-		(void) fprintf(fp, "\t%s: %s\n", pt_to_str(PT_IMPORTANCE),
-		    psettab->zone_importance);
+
+	if (resprop_enabled(RT_DCPU, PT_NCPUS)) {
+		if (strcmp(psettab->zone_ncpu_min, psettab->zone_ncpu_max) == 0)
+			(void) fprintf(fp, "\t%s: %s\n", pt_to_str(PT_NCPUS),
+			    psettab->zone_ncpu_max);
+		else
+			(void) fprintf(fp, "\t%s: %s-%s\n", pt_to_str(PT_NCPUS),
+			    psettab->zone_ncpu_min, psettab->zone_ncpu_max);
+	}
+	if (resprop_enabled(RT_DCPU, PT_IMPORTANCE)) {
+		if (psettab->zone_importance[0] != '\0')
+			(void) fprintf(fp, "\t%s: %s\n",
+			    pt_to_str(PT_IMPORTANCE), psettab->zone_importance);
+	}
 }
 
 static void
 info_pset(zone_dochandle_t handle, FILE *fp)
 {
 	struct zone_psettab lookup;
+
+	if (!res_enabled(RT_DCPU))
+		return;
 
 	if (zonecfg_getpsetent(handle, &lookup) == Z_OK)
 		output_pset(fp, &lookup);
@@ -5944,17 +6084,23 @@ output_pcap(FILE *fp)
 {
 	uint64_t cap;
 
-	if (zonecfg_get_aliased_rctl(handle, ALIAS_CPUCAP, &cap) == Z_OK) {
-		float scaled = (float)cap / 100;
-		(void) fprintf(fp, "%s:\n", rt_to_str(RT_PCAP));
-		(void) fprintf(fp, "\t[%s: %.2f]\n", pt_to_str(PT_NCPUS),
-		    scaled);
+	if (resprop_enabled(RT_PCAP, PT_NCPUS)) {
+		if (zonecfg_get_aliased_rctl(handle, ALIAS_CPUCAP, &cap) ==
+		    Z_OK) {
+			float scaled = (float)cap / 100;
+			(void) fprintf(fp, "%s:\n", rt_to_str(RT_PCAP));
+			(void) fprintf(fp, "\t[%s: %.2f]\n",
+			    pt_to_str(PT_NCPUS), scaled);
+		}
 	}
 }
 
 static void
 info_pcap(FILE *fp)
 {
+	if (!res_enabled(RT_PCAP))
+		return;
+
 	output_pcap(fp);
 }
 
@@ -5963,6 +6109,9 @@ static void
 info_aliased_rctl(zone_dochandle_t handle, FILE *fp, char *alias)
 {
 	uint64_t limit;
+
+	if (!brand_resprop_enabled(brand, NULL, alias))
+		return;
 
 	if (zonecfg_get_aliased_rctl(handle, alias, &limit) == Z_OK) {
 		/* convert memory based properties */
@@ -6016,7 +6165,7 @@ output_mcap(FILE *fp, int showphys, uint64_t maxphys, int showswap,
 
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_MCAP));
 
-	if (showphys == Z_OK) {
+	if (showphys == Z_OK && resprop_enabled(RT_MCAP, PT_PHYSICAL)) {
 		(void) snprintf(buf, sizeof (buf), "%llu", maxphys);
 		bytes_to_units(buf, buf, sizeof (buf));
 		/* Print directly since "physical" also is a net property. */
@@ -6026,13 +6175,13 @@ output_mcap(FILE *fp, int showphys, uint64_t maxphys, int showswap,
 	if (showswap == Z_OK) {
 		(void) snprintf(buf, sizeof (buf), "%llu", maxswap);
 		bytes_to_units(buf, buf, sizeof (buf));
-		output_prop(fp, PT_SWAP, buf, B_TRUE);
+		output_prop(fp, RT_MCAP, PT_SWAP, buf, B_TRUE);
 	}
 
 	if (showlocked == Z_OK) {
 		(void) snprintf(buf, sizeof (buf), "%llu", maxlocked);
 		bytes_to_units(buf, buf, sizeof (buf));
-		output_prop(fp, PT_LOCKED, buf, B_TRUE);
+		output_prop(fp, RT_MCAP, PT_LOCKED, buf, B_TRUE);
 	}
 }
 
@@ -6043,6 +6192,9 @@ info_mcap(zone_dochandle_t handle, FILE *fp)
 	uint64_t swap_limit;
 	uint64_t locked_limit;
 	uint64_t phys_limit;
+
+	if (!res_enabled(RT_MCAP))
+		return;
 
 	res1 = zonecfg_get_aliased_rctl(handle, ALIAS_MAXPHYSMEM, &phys_limit);
 	res2 = zonecfg_get_aliased_rctl(handle, ALIAS_MAXSWAP, &swap_limit);
@@ -6057,18 +6209,24 @@ info_mcap(zone_dochandle_t handle, FILE *fp)
 static void
 output_auth(FILE *fp, struct zone_admintab *admintab)
 {
+	if (!res_enabled(RT_ADMIN))
+		return;
+
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_ADMIN));
-	output_prop(fp, PT_USER, admintab->zone_admin_user, B_TRUE);
-	output_prop(fp, PT_AUTHS, admintab->zone_admin_auths, B_TRUE);
+	output_prop(fp, RT_ADMIN, PT_USER, admintab->zone_admin_user, B_TRUE);
+	output_prop(fp, RT_ADMIN, PT_AUTHS, admintab->zone_admin_auths, B_TRUE);
 }
 
 static void
 output_secflags(FILE *fp, struct zone_secflagstab *sftab)
 {
 	(void) fprintf(fp, "%s:\n", rt_to_str(RT_SECFLAGS));
-	output_prop(fp, PT_DEFAULT, sftab->zone_secflags_default, B_TRUE);
-	output_prop(fp, PT_LOWER, sftab->zone_secflags_lower, B_TRUE);
-	output_prop(fp, PT_UPPER, sftab->zone_secflags_upper, B_TRUE);
+	output_prop(fp, RT_SECFLAGS, PT_DEFAULT, sftab->zone_secflags_default,
+	    B_TRUE);
+	output_prop(fp, RT_SECFLAGS, PT_LOWER, sftab->zone_secflags_lower,
+	    B_TRUE);
+	output_prop(fp, RT_SECFLAGS, PT_UPPER, sftab->zone_secflags_upper,
+	    B_TRUE);
 }
 
 static void
@@ -6077,6 +6235,8 @@ info_auth(zone_dochandle_t handle, FILE *fp, cmd_t *cmd)
 	struct zone_admintab lookup, user;
 	boolean_t output = B_FALSE;
 	int err;
+
+	MAYBE_WARN_AND_RETURN_UNLESS_RES_ENABLED(RT_ADMIN, cmd);
 
 	if ((err = zonecfg_setadminent(handle)) != Z_OK) {
 		zone_perror(zone, err, B_TRUE);
@@ -6109,6 +6269,9 @@ static void
 info_secflags(zone_dochandle_t handle, FILE *fp)
 {
 	struct zone_secflagstab sftab;
+
+	if (!res_enabled(RT_SECFLAGS))
+		return;
 
 	if (zonecfg_lookup_secflags(handle, &sftab) == Z_OK) {
 		output_secflags(fp, &sftab);
