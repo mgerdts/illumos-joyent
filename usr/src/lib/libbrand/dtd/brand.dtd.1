@@ -632,6 +632,53 @@
 			ip-type ( shared | exclusive ) "all" >
 
 <!--
+  resource
+
+    Allows a resource type to be tagged for special handling by zonecfg.  While
+    this DTD allows arbitrary nesting of resources, it is expected that there
+    will be one top-level "zone" resource that contains all other resources.
+
+    Its attributes are
+      name	The name of the resource type.  This name must match the
+		element name in zonecfg.dtd.1.
+      cfgname	If the resource name known to zonecfg(1M) users does not match
+		the name in zonecfg.dtd.1, specify the name known to zonecfg
+		users in cfgname.
+      enabled	Is this resource type usable by the brand?  If not set to
+		'true', the resource type and all properties within it are
+		disabled.  Since the default is 'true' simply including a
+		resource in a brand's config.xml is sufficient to enable it.
+-->
+<!ELEMENT resource	(property* resource*) >
+<!ATTLIST resource	name	CDATA #REQUIRED
+			cfgname	CDATA #IMPLIED
+			enabled	CDATA "true" >
+<!--
+  property
+
+    Allows a property type to be tagged for special handling by zonecfg.
+
+    Its attributes are
+      name		The name of the resourc etype.  This must match the
+			attribute (for simple properties) or element name (for
+			lists and complex properties) in zonecfg.dtd.1.
+      cfgname		If the property name known to zonecfg(1M) users does not
+			match the name in zonecfg.dtd.1, specify the name known
+			to zonecfg users in cfgname.
+      enabled		Is this property type usable by the brand?  If not set
+			to 'true', the property is disabled.  Since the default
+			value is 'true' simply including aproperty in a brand's
+			config.xml is sufficien to enable it.
+      fixed-value	The property must exist and must have the value
+			specified by this attribue.
+-->
+<!ELEMENT property	(resource* property*) >
+<!ATTLIST resource	name	CDATA #REQUIRED
+			cfgname	CDATA #IMPLIED
+			fixed-value	CDATA #IMPLIED
+			enabled	CDATA "true" >
+
+<!--
   brand
 
     The toplevel container for a brand configuration.
@@ -650,6 +697,6 @@
 			presnap?, postsnap?, validatesnap?,
 			preuninstall?, uninstall?,
 			prestatechange?, poststatechange?, query?,
-			privilege+)>
+			privilege+ resource)>
 
 <!ATTLIST brand		name		CDATA #REQUIRED>

@@ -67,4 +67,78 @@
 
 	<privilege set="required" name="proc_exec" />
 	<privilege set="required" name="sys_mount" />
+
+	<resource name="zone">
+		<property name="name" />
+		<property name="zonepath" />
+		<property name="autoboot" />
+		<property name="ip-type" />
+		<property name="hostid" />
+		<property name="pool" />
+		<property name="limitpriv" />
+		<property name="bootargs" />
+		<property name="brand" />
+		<property name="debugid" />
+		<property name="scheduling-class" />
+		<property name="fs-allowed" />
+		<property name="version" fixed-value="1" />
+
+		<!-- aliases -->
+		<property name="max-lwps" />
+		<property name="max-processes" />
+		<property name="max-shm-memory" />
+		<property name="max-shm-ids" />
+		<property name="max-msg-ids" />
+		<property name="max-sem-ids" />
+		<property name="cpu-shares" />
+		<property name="zfs-io-priority" />
+
+		<resource dtdname="network" cfgname="net">
+			<property name="address" />
+			<property name="allowed-address" />
+			<property name="defrouter" />
+			<property name="global-nic" />
+			<property name="mac-addr" />
+			<property name="physical" />
+			<property name="vlan-id" />
+			<property name="net-attr" cfgname="property" />
+		</resource>
+		<resource name="device">
+			<property name="match" />
+			<property name="net-attr" cfgname="property" />
+		</resource>
+		<resource name="rctl">
+			<property name="rctl-value" />
+		</resource>
+		<resource name="attr">
+			<property name="name" />
+			<property name="type" />
+			<property name="value" />
+		</resource>
+		<resource name="pcap" cfgname="capped-cpu">
+			<!-- aliases -->
+			<property name="ncpus" />
+		</resource>
+		<resource name="pset" cfgname="dedicated-cpu">
+			<property name="ncpus" />
+			<property name="ncpu-min" />
+			<property name="ncpu-max" />
+		</resource>
+		<resource name="mcap" cfgname="capped-memory">
+			<property name="physcap" />
+			<!-- aliases -->
+			<property name="physical" />
+			<property name="swap" />
+			<property name="locked" />
+		</resource>
+		<resource name="admin">
+			<property name="user" />
+			<property name="auths" />
+		</resource>
+		<resource name="security-flags">
+			<property name="default" />
+			<property name="lower" />
+			<property name="upper" />
+		</resource>
+	</resource>
 </brand>
