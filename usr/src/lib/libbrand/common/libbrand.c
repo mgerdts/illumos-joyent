@@ -101,9 +101,12 @@
 
 #define	DTD_ENTITY_TRUE		"true"
 
+#define	LIBBRAND_DEBUG_RESPROP_ENABLE "LIBBRAND_DEBUG_RESPROP_ENABLE"
+
 static volatile boolean_t	libbrand_initialized = B_FALSE;
 static char			i_curr_arch[MAXNAMELEN];
 static char			i_curr_zone[ZONENAME_MAX];
+static boolean_t		libbrand_debug_resprop_enable;
 
 /*ARGSUSED*/
 static void
@@ -118,6 +121,7 @@ static boolean_t
 libbrand_initialize()
 {
 	static mutex_t initialize_lock = DEFAULTMUTEX;
+	char *val;
 
 	(void) mutex_lock(&initialize_lock);
 
@@ -136,6 +140,9 @@ libbrand_initialize()
 		(void) mutex_unlock(&initialize_lock);
 		return (B_FALSE);
 	}
+
+	val = getenv(LIBBRAND_DEBUG_RESPROP_ENABLE);
+	libbrand_debug_resprop_enable = (val != NULL && val[0] != '\0');
 
 	/*
 	 * Note that here we're initializing per-process libxml2
@@ -1073,7 +1080,8 @@ brand_res_enabled(brand_handle_t bh, const char *rt)
 
 	if (rt == NULL) {
 		/* global scope */
-		return (B_TRUE);
+		ret = B_TRUE;
+		goto out;
 	}
 	len = snprintf(xpquery, sizeof (xpquery),
 	    "/brand/resource[@name='zone' @enabled='true']"
@@ -1090,6 +1098,12 @@ brand_res_enabled(brand_handle_t bh, const char *rt)
 
 	xmlXPathFreeObject(result);
 	xmlXPathFreeContext(context);
+
+out:
+	if (libbrand_debug_resprop_enable) {
+		(void) printf("%s(%s) returns %s\n", __func__,
+		    rt == NULL ? "<null>" : rt, ret ? "B_TRUE" : "B_FALSE");
+	}
 
 	return (ret);
 }
@@ -1108,6 +1122,11 @@ brand_resprop_enabled(brand_handle_t bh, const char *rt, const char *pt)
 	xmlXPathObjectPtr result;
 	boolean_t ret;
 
+	/*
+	 * XXX-mg: is there a count() operator in XPATH that could be used to
+	 * possibly reduce memory allocations for the result set?  Is this even
+	 * an issue?
+	 */
 	if (rt == NULL) {
 		/* global scope */
 		len = snprintf(xpquery, sizeof (xpquery),
@@ -1132,6 +1151,11 @@ brand_resprop_enabled(brand_handle_t bh, const char *rt, const char *pt)
 
 	xmlXPathFreeObject(result);
 	xmlXPathFreeContext(context);
+
+	if (libbrand_debug_resprop_enable) {
+		(void) printf("%s(%s, %s) returns %s\n", __func__,
+		    rt == NULL ? "<null>" : rt, pt, ret ? "B_TRUE" : "B_FALSE");
+	}
 
 	return (ret);
 }
