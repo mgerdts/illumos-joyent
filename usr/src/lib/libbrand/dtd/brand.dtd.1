@@ -649,7 +649,7 @@
 		disabled.  Since the default is 'true' simply including a
 		resource in a brand's config.xml is sufficient to enable it.
 -->
-<!ELEMENT resource	(property* resource*) >
+<!ELEMENT resource	(property*, resource*) >
 <!ATTLIST resource	name	CDATA #REQUIRED
 			cfgname	CDATA #IMPLIED
 			enabled	CDATA "true" >
@@ -672,8 +672,8 @@
       fixed-value	The property must exist and must have the value
 			specified by this attribue.
 -->
-<!ELEMENT property	(resource* property*) >
-<!ATTLIST resource	name	CDATA #REQUIRED
+<!ELEMENT property	(#PCDATA) >
+<!ATTLIST property	name	CDATA #REQUIRED
 			cfgname	CDATA #IMPLIED
 			fixed-value	CDATA #IMPLIED
 			enabled	CDATA "true" >
@@ -697,6 +697,6 @@
 			presnap?, postsnap?, validatesnap?,
 			preuninstall?, uninstall?,
 			prestatechange?, poststatechange?, query?,
-			privilege+ resource)>
+			privilege+, resource)>
 
 <!ATTLIST brand		name		CDATA #REQUIRED>

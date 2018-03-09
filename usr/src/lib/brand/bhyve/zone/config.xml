@@ -93,7 +93,7 @@
 		<property name="cpu-shares" />
 		<property name="zfs-io-priority" />
 
-		<resource dtdname="network" cfgname="net">
+		<resource name="network" cfgname="net">
 			<property name="address" />
 			<property name="allowed-address" />
 			<property name="defrouter" />
