@@ -1084,8 +1084,8 @@ brand_res_enabled(brand_handle_t bh, const char *rt)
 		goto out;
 	}
 	len = snprintf(xpquery, sizeof (xpquery),
-	    "/brand/resource[@name='zone' @enabled='true']"
-	    "/resource[@name='%s' @enabled='true']", rt);
+	    "//brand/resource[@name='zone']"
+	    "/resource[@name='%s' and @enabled='true']", rt);
 	assert(len < sizeof (xpquery));
 
 	context = xmlXPathNewContext(bhp->bh_config);
@@ -1093,16 +1093,24 @@ brand_res_enabled(brand_handle_t bh, const char *rt)
 
 	/*
 	 * If the xpath expression returned any results, the resource type is
+	 * enabled, otherwise it is disabled.
 	 */
-	ret = !xmlXPathNodeSetIsEmpty(result->nodesetval);
+#error the obvious examples of xmlXPathEvalExpression recommend xmlXPathNodeSetEmpty().  That seems to give invariant results.  More work needed here and in similar code in following function.
+	if (result == NULL) {
+		ret = B_FALSE;
+	} else {
+		printf("%d results\n", xmlXPathNodeSetGetLength(result));
+		ret = !xmlXPathNodeSetIsEmpty(result);
+		xmlXPathFreeObject(result);
+	}
 
-	xmlXPathFreeObject(result);
 	xmlXPathFreeContext(context);
 
 out:
 	if (libbrand_debug_resprop_enable) {
-		(void) printf("%s(%s) returns %s\n", __func__,
-		    rt == NULL ? "<null>" : rt, ret ? "B_TRUE" : "B_FALSE");
+		(void) printf("%s(%s) returns %s XPATH %s\n", __func__,
+		    rt == NULL ? "<null>" : rt, ret ? "B_TRUE" : "B_FALSE",
+		    xpquery);
 	}
 
 	return (ret);
@@ -1122,21 +1130,16 @@ brand_resprop_enabled(brand_handle_t bh, const char *rt, const char *pt)
 	xmlXPathObjectPtr result;
 	boolean_t ret;
 
-	/*
-	 * XXX-mg: is there a count() operator in XPATH that could be used to
-	 * possibly reduce memory allocations for the result set?  Is this even
-	 * an issue?
-	 */
 	if (rt == NULL) {
 		/* global scope */
 		len = snprintf(xpquery, sizeof (xpquery),
-		    "/brand/resource[@name='zone' @enabled='true']"
-		    "/property[@name='%s' @enabled='true']", pt);
+		    "//brand/resource[@name='zone']"
+		    "/property[@name='%s' and @enabled='true']", pt);
 	} else {
 		len = snprintf(xpquery, sizeof (xpquery),
-		    "/brand/resource[@name='zone' @enabled='true']"
-		    "/resource[@name='%s' @enabled='true']"
-		    "/property[@name='%s' @enabled='true']", rt, pt);
+		    "//brand/resource[@name='zone']"
+		    "/resource[@name='%s' and @enabled='true']"
+		    "/property[@name='%s' and @enabled='true']", rt, pt);
 	}
 	assert(len < sizeof (xpquery));
 
@@ -1145,16 +1148,22 @@ brand_resprop_enabled(brand_handle_t bh, const char *rt, const char *pt)
 
 	/*
 	 * If the xpath expression returned any results, the property type is
-	 * enabled.
+	 * enabled, otherise it is disabled.
 	 */
-	ret = !xmlXPathNodeSetIsEmpty(result->nodesetval);
+	if (result == NULL) {
+		ret = B_FALSE;
+	} else {
+		printf("%d results\n", xmlXPathNodeSetGetLength(result));
+		ret = !xmlXPathNodeSetIsEmpty(result);
+		xmlXPathFreeObject(result);
+	}
 
-	xmlXPathFreeObject(result);
 	xmlXPathFreeContext(context);
 
 	if (libbrand_debug_resprop_enable) {
-		(void) printf("%s(%s, %s) returns %s\n", __func__,
-		    rt == NULL ? "<null>" : rt, pt, ret ? "B_TRUE" : "B_FALSE");
+		(void) printf("%s(%s, %s) returns %s XPATH: %s\n", __func__,
+		    rt == NULL ? "<null>" : rt, pt, ret ? "B_TRUE" : "B_FALSE",
+		    xpquery);
 	}
 
 	return (ret);

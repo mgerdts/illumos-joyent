@@ -4766,7 +4766,11 @@ set_func(cmd_t *cmd)
 		res_type = resource_scope;
 	}
 
-	if (!brand_resprop_enabled(brand, rt_to_str(res_type),
+	/*
+	 * It is only possible to check if resources and properties are enabled
+	 * if the brand has been set.
+	 */
+	if (brand != NULL && !brand_resprop_enabled(brand, rt_to_str(res_type),
 	    pt_to_str(prop_type))) {
 		zerr(gettext("Property type %s is not allowed %s resources in "
 		    "this brand."), pt_to_str(prop_type), rt_to_str(res_type));
@@ -4867,10 +4871,13 @@ set_func(cmd_t *cmd)
 			    rt_to_str(RT_BRAND));
 			return;
 		}
-		if ((err = zonecfg_set_brand(handle, prop_id)) != Z_OK)
+		if ((err = zonecfg_set_brand(handle, prop_id)) != Z_OK) {
 			zone_perror(zone, err, B_TRUE);
-		else
+		} else if ((brand = brand_open(prop_id)) == NULL) {
+			zerr(gettext("Failed to open brand '%s'"), prop_id);
+		} else {
 			need_to_commit = B_TRUE;
+		}
 		return;
 	case RT_AUTOBOOT:
 		if (strcmp(prop_id, "true") == 0) {
