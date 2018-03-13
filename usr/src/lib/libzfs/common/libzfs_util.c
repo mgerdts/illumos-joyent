@@ -1199,6 +1199,7 @@ zprop_parse_value(libzfs_handle_t *hdl, nvpair_t *elem, int prop,
 	const char *propname;
 	char *value;
 	boolean_t isnone = B_FALSE;
+	boolean_t isauto = B_FALSE;
 
 	if (type == ZFS_TYPE_POOL) {
 		proptype = zpool_prop_get_type(prop);
@@ -1234,8 +1235,9 @@ zprop_parse_value(libzfs_handle_t *hdl, nvpair_t *elem, int prop,
 			(void) nvpair_value_string(elem, &value);
 			if (strcmp(value, "none") == 0) {
 				isnone = B_TRUE;
-			} else if (zfs_nicestrtonum(hdl, value, ivalp)
-			    != 0) {
+			} else if (strcmp(value, "auto") == 0) {
+				isauto = B_TRUE;
+			} else if (zfs_nicestrtonum(hdl, value, ivalp) != 0) {
 				goto error;
 			}
 		} else if (datatype == DATA_TYPE_UINT64) {
@@ -1265,6 +1267,18 @@ zprop_parse_value(libzfs_handle_t *hdl, nvpair_t *elem, int prop,
 		    prop == ZFS_PROP_SNAPSHOT_LIMIT)) {
 			*ivalp = UINT64_MAX;
 		}
+
+		/*
+		 * Special handling for 'reservation' and 'refreservation'.  Use
+		 * UINT64_MAX to tell the caller to use
+		 * zvol_volsize_to_reservation()
+		 */
+		if ((type & ZFS_TYPE_VOLUME) && isauto &&
+		    (prop == ZFS_PROP_RESERVATION ||
+		    prop == ZFS_PROP_REFRESERVATION)) {
+			*ivalp = UINT64_MAX;
+		}
+
 		break;
 
 	case PROP_TYPE_INDEX:

@@ -1390,18 +1390,6 @@ badlabel:
 			char buf[64];
 
 			switch (prop) {
-			case ZFS_PROP_RESERVATION:
-			case ZFS_PROP_REFRESERVATION:
-				if (intval > volsize) {
-					zfs_error_aux(hdl, dgettext(TEXT_DOMAIN,
-					    "'%s' is greater than current "
-					    "volume size"), propname);
-					(void) zfs_error(hdl, EZFS_BADPROP,
-					    errbuf);
-					goto error;
-				}
-				break;
-
 			case ZFS_PROP_VOLSIZE:
 				if (intval % blocksize != 0) {
 					zfs_nicenum(blocksize, buf,
@@ -1497,6 +1485,40 @@ zfs_add_synthetic_resv(zfs_handle_t *zhp, nvlist_t *nvl)
 
 	if (nvlist_add_uint64(nvl, zfs_prop_to_name(resv_prop),
 	    new_reservation) != 0) {
+		(void) no_memory(zhp->zfs_hdl);
+		return (-1);
+	}
+	return (1);
+}
+
+static int
+zfs_add_auto_resv(zfs_handle_t *zhp, zfs_prop_t prop, nvlist_t *nvl)
+{
+	uint64_t volsize;
+	uint64_t copies;
+	uint64_t resvsize;
+	nvlist_t *props;
+
+	props = fnvlist_alloc();
+
+	fnvlist_add_uint64(props, zfs_prop_to_name(ZFS_PROP_VOLBLOCKSIZE),
+	    zfs_prop_get_int(zhp, ZFS_PROP_VOLBLOCKSIZE));
+
+	if (nvlist_lookup_uint64(nvl, zfs_prop_to_name(ZFS_PROP_VOLSIZE),
+	    &volsize) != 0) {
+		volsize = zfs_prop_get_int(zhp, ZFS_PROP_VOLSIZE);
+	}
+
+	if (nvlist_lookup_uint64(nvl, zfs_prop_to_name(ZFS_PROP_COPIES),
+	    &copies) != 0) {
+		copies = zfs_prop_get_int(zhp, ZFS_PROP_COPIES);
+	}
+	fnvlist_add_uint64(props, zfs_prop_to_name(ZFS_PROP_COPIES), copies);
+
+	resvsize = zvol_volsize_to_reservation(volsize, props);
+	fnvlist_free(props);
+
+	if (nvlist_add_uint64(nvl, zfs_prop_to_name(prop), resvsize) != 0) {
 		(void) no_memory(zhp->zfs_hdl);
 		return (-1);
 	}
@@ -1646,6 +1668,7 @@ zfs_prop_set_list(zfs_handle_t *zhp, nvlist_t *props)
 	nvlist_t *nvl;
 	int nvl_len;
 	int added_resv = 0;
+	zfs_prop_t auto_resv_prop = ZPROP_INVAL;
 
 	(void) snprintf(errbuf, sizeof (errbuf),
 	    dgettext(TEXT_DOMAIN, "cannot set property for '%s'"),
@@ -1663,11 +1686,35 @@ zfs_prop_set_list(zfs_handle_t *zhp, nvlist_t *props)
 	for (nvpair_t *elem = nvlist_next_nvpair(nvl, NULL);
 	    elem != NULL;
 	    elem = nvlist_next_nvpair(nvl, elem)) {
-		if (zfs_name_to_prop(nvpair_name(elem)) == ZFS_PROP_VOLSIZE &&
-		    (added_resv = zfs_add_synthetic_resv(zhp, nvl)) == -1) {
-			goto error;
+		uint64_t resv;
+		zfs_prop_t prop;
+
+		prop = zfs_name_to_prop(nvpair_name(elem));
+		switch (prop) {
+		case ZFS_PROP_REFRESERVATION:
+		case ZFS_PROP_RESERVATION:
+			if (nvpair_value_uint64(elem, &resv) == 0 &&
+			    resv == UINT64_MAX) {
+				if (nvlist_remove_nvpair(nvl, elem) != 0) {
+					goto error;
+				}
+				auto_resv_prop = prop;
+			}
+			break;
+		case ZFS_PROP_VOLSIZE:
+			added_resv = zfs_add_synthetic_resv(zhp, nvl);
+			if (added_resv == -1) {
+				goto error;
+			}
+			break;
+		default:
+			break;
 		}
 	}
+	if (added_resv == 0 && auto_resv_prop != ZPROP_INVAL) {
+		zfs_add_auto_resv(zhp, auto_resv_prop, nvl);
+	}
+
 	/*
 	 * Check how many properties we're setting and allocate an array to
 	 * store changelist pointers for postfix().
