@@ -1514,10 +1514,6 @@ zfs_add_auto_resv(zfs_handle_t *zhp, zfs_prop_t prop, nvlist_t *nvl)
 	uint64_t resvsize;
 	nvlist_t *props;
 
-	if (nvlist_exists(nvl, zfs_prop_to_name(prop))) {
-		return (0);
-	}
-
 	props = fnvlist_alloc();
 
 	fnvlist_add_uint64(props, zfs_prop_to_name(ZFS_PROP_VOLBLOCKSIZE),
@@ -1681,26 +1677,10 @@ zfs_prop_set_list(zfs_handle_t *zhp, nvlist_t *props)
 	nvlist_t *nvl;
 	int nvl_len;
 	int added_resv = 0;
-	zfs_prop_t resv_prop;
-	boolean_t auto_resv = B_FALSE;
-	char *strval;
 
 	(void) snprintf(errbuf, sizeof (errbuf),
 	    dgettext(TEXT_DOMAIN, "cannot set property for '%s'"),
 	    zhp->zfs_name);
-
-	/*
-	 * zfs_valid_proplist() is likely missing information required to
-	 * translate "auto" into a reasonable reservation.  Strip
-	 * [ref]reservation=auto from props before passing to
-	 * zfs_valid_proplist().
-	 */
-	if (zfs_which_resv_prop(zhp, &resv_prop) == 0 &&
-	    nvlist_lookup_string(props, zfs_prop_to_name(resv_prop),
-	    &strval) == 0 && strcmp(strval, "auto") == 0) {
-		fnvlist_remove(props, zfs_prop_to_name(resv_prop));
-		auto_resv = B_TRUE;
-	}
 
 	if ((nvl = zfs_valid_proplist(hdl, zhp->zfs_type, props,
 	    zfs_prop_get_int(zhp, ZFS_PROP_ZONED), zhp, zhp->zpool_hdl,
@@ -1725,8 +1705,18 @@ zfs_prop_set_list(zfs_handle_t *zhp, nvlist_t *props)
 	 * to zfs_add_synthetic_resv().  If it was called and returned 1, it has
 	 * already done the right thing.
 	 */
-	if (added_resv != 1 && auto_resv) {
-		added_resv = zfs_add_auto_resv(zhp, resv_prop, nvl);
+	if (added_resv != 1) {
+		zfs_prop_t resv_prop;
+		uint64_t resv;
+
+		if (zfs_which_resv_prop(zhp, &resv_prop) == 0 &&
+		    nvlist_lookup_uint64(nvl, zfs_prop_to_name(resv_prop),
+		    &resv) == 0 && resv == UINT64_MAX) {
+			added_resv = zfs_add_auto_resv(zhp, resv_prop, nvl);
+			if (added_resv != 1) {
+				goto error;
+			}
+		}
 	}
 
 	/*

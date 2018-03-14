@@ -623,95 +623,6 @@ should_auto_mount(zfs_handle_t *zhp)
 }
 
 /*
- * Update reservation or refreservation so that it is large enough to fill the
- * device and store metadata.
- */
-static int
-fix_resv_prop(const char *poolname, uint64_t volsize, uint64_t defblksize,
-    nvlist_t *inprops, boolean_t force)
-{
-	nvlist_t *props;
-	zpool_handle_t *zpool_handle;
-	uint64_t spa_version;
-	char *p;
-	zfs_prop_t resv_prop;
-	char *strval;
-	char msg[1024];
-	uint64_t blksize;
-	int ret = 0;
-
-	/*
-	 * Augment a copy of inprops with defblksize, if needed.
-	 */
-	if (defblksize != 0 &&
-	    nvlist_lookup_uint64(inprops,
-	    zfs_prop_to_name(ZFS_PROP_VOLBLOCKSIZE), &blksize) != 0) {
-		if (nvlist_dup(inprops, &props, 0) != 0) {
-			nomem();
-		}
-		if (nvlist_add_uint64(props,
-		    zfs_prop_to_name(ZFS_PROP_VOLBLOCKSIZE), defblksize) != 0) {
-			nomem();
-		}
-	} else {
-		props = inprops;
-	}
-
-	/*
-	 * Decide between "reservation" and "refreservation"
-	 */
-	if ((p = strchr(poolname, '/')) != NULL) {
-		*p = '\0';
-	}
-	if ((zpool_handle = zpool_open(g_zfs, poolname)) == NULL) {
-		ret = -1;
-		goto out;
-	}
-	spa_version = zpool_get_prop_int(zpool_handle, ZPOOL_PROP_VERSION,
-	    NULL);
-	if (spa_version >= SPA_VERSION_REFRESERVATION) {
-		resv_prop = ZFS_PROP_REFRESERVATION;
-	} else {
-		resv_prop = ZFS_PROP_RESERVATION;
-	}
-	zpool_close(zpool_handle);
-
-	/*
-	 * If a fix is not being forced, check for [ref]reservation=auto
-	 */
-	if (!force) {
-		if (nvlist_lookup_string(props, zfs_prop_to_name(resv_prop),
-		    &strval) == 0) {
-			if (strcmp(strval, "auto") != 0) {
-				/* XXX-mg */
-				(void) fprintf(stderr,
-				    "Unexpected property %s=%s\n",
-				    zfs_prop_to_name(resv_prop), strval);
-				ret = -1;
-				goto out;
-			}
-		} else {
-			goto out;
-		}
-	}
-
-	/*
-	 * Calculate the [ref]reservation and update the properties.
-	 */
-	volsize = zvol_volsize_to_reservation(volsize, props);
-	if (nvlist_add_uint64(inprops, zfs_prop_to_name(resv_prop),
-	    volsize) != 0) {
-		nomem();
-	}
-
-out:
-	if (props != inprops) {
-		nvlist_free(props);
-	}
-	return (ret);
-}
-
-/*
  * zfs clone [-Fp] [-o prop=value] ... <snap> <fs | vol>
  *
  * Given an existing dataset, create a writable copy whose initial contents
@@ -735,9 +646,6 @@ zfs_do_clone(int argc, char **argv)
 	nvlist_t *props;
 	int ret = 0;
 	int c;
-	char snapparent[MAXNAMELEN];
-	const char *snapname;
-	char *at;
 
 	if (nvlist_alloc(&props, NV_UNIQUE_NAME, 0) != 0)
 		nomem();
@@ -950,10 +858,49 @@ zfs_do_create(int argc, char **argv)
 		goto badusage;
 	}
 
-	/* If not sparse, set refreservation or reservation */
-	if (type == ZFS_TYPE_VOLUME && !noreserve &&
-	    fix_resv_prop(argv[0], volsize, 0, props, B_TRUE) != 0) {
-		goto error;
+	if (type == ZFS_TYPE_VOLUME && !noreserve) {
+		zpool_handle_t *zpool_handle;
+		nvlist_t *real_props = NULL;
+		uint64_t spa_version;
+		char *p;
+		zfs_prop_t resv_prop;
+		char *strval;
+		char msg[1024];
+
+		if ((p = strchr(argv[0], '/')) != NULL)
+			*p = '\0';
+		zpool_handle = zpool_open(g_zfs, argv[0]);
+		if (p != NULL)
+			*p = '/';
+		if (zpool_handle == NULL)
+			goto error;
+		spa_version = zpool_get_prop_int(zpool_handle,
+		    ZPOOL_PROP_VERSION, NULL);
+		if (spa_version >= SPA_VERSION_REFRESERVATION)
+			resv_prop = ZFS_PROP_REFRESERVATION;
+		else
+			resv_prop = ZFS_PROP_RESERVATION;
+
+		(void) snprintf(msg, sizeof (msg),
+		    gettext("cannot create '%s'"), argv[0]);
+		if (props && (real_props = zfs_valid_proplist(g_zfs, type,
+		    props, 0, NULL, zpool_handle, msg)) == NULL) {
+			zpool_close(zpool_handle);
+			goto error;
+		}
+		zpool_close(zpool_handle);
+
+		volsize = zvol_volsize_to_reservation(volsize, real_props);
+		nvlist_free(real_props);
+
+		if (nvlist_lookup_string(props, zfs_prop_to_name(resv_prop),
+		    &strval) != 0) {
+			if (nvlist_add_uint64(props,
+			    zfs_prop_to_name(resv_prop), volsize) != 0) {
+				nvlist_free(props);
+				nomem();
+			}
+		}
 	}
 
 	if (parents && zfs_name_valid(argv[0], type)) {
