@@ -1504,15 +1504,33 @@ zfs_add_synthetic_resv(zfs_handle_t *zhp, nvlist_t *nvl)
 }
 
 /*
- * Helper for 'zfs set [ref]reservation=auto'.  Return codes must match
- * zfs_add_synthetic_resv().
+ * Helper for 'zfs {set|clone} [ref]reservation=auto'.  Must be called after
+ * zfs_valid_proplist(), as it is what sets the UINT64_MAX sentinal value.
+ * Return codes must match zfs_add_synthetic_resv().
  */
 static int
-zfs_add_auto_resv(zfs_handle_t *zhp, zfs_prop_t prop, nvlist_t *nvl)
+zfs_fix_auto_resv(zfs_handle_t *zhp, nvlist_t *nvl)
 {
 	uint64_t volsize;
 	uint64_t resvsize;
+	zfs_prop_t prop;
 	nvlist_t *props;
+
+	if (!ZFS_IS_VOLUME(zhp)) {
+		return (0);
+	}
+
+	if (zfs_which_resv_prop(zhp, &prop) != 0) {
+		return (-1);
+	}
+	if (nvlist_lookup_uint64(nvl, zfs_prop_to_name(prop), &resvsize) != 0) {
+		/* No value being set, so it can't be "auto" */
+		return (0);
+	}
+	if (resvsize != UINT64_MAX) {
+		/* Being set to a value other than "auto" */
+		return (0);
+	}
 
 	props = fnvlist_alloc();
 
@@ -1700,23 +1718,9 @@ zfs_prop_set_list(zfs_handle_t *zhp, nvlist_t *props)
 		}
 	}
 
-	/*
-	 * Delay update of reservation or refreservation until after any call
-	 * to zfs_add_synthetic_resv().  If it was called and returned 1, it has
-	 * already done the right thing.
-	 */
-	if (added_resv != 1) {
-		zfs_prop_t resv_prop;
-		uint64_t resv;
-
-		if (zfs_which_resv_prop(zhp, &resv_prop) == 0 &&
-		    nvlist_lookup_uint64(nvl, zfs_prop_to_name(resv_prop),
-		    &resv) == 0 && resv == UINT64_MAX) {
-			added_resv = zfs_add_auto_resv(zhp, resv_prop, nvl);
-			if (added_resv != 1) {
-				goto error;
-			}
-		}
+	if (added_resv != 1 &&
+	    (added_resv = zfs_fix_auto_resv(zhp, nvl)) == -1) {
+		goto error;
 	}
 
 	/*
@@ -3717,8 +3721,6 @@ zfs_clone(zfs_handle_t *zhp, const char *target, nvlist_t *props)
 	char errbuf[1024];
 	libzfs_handle_t *hdl = zhp->zfs_hdl;
 	uint64_t zoned;
-	boolean_t auto_resv = B_FALSE;
-	zfs_prop_t resv_prop = ZPROP_INVAL;
 
 	assert(zhp->zfs_type == ZFS_TYPE_SNAPSHOT);
 
@@ -3739,31 +3741,18 @@ zfs_clone(zfs_handle_t *zhp, const char *target, nvlist_t *props)
 
 	if (props) {
 		zfs_type_t type;
+
 		if (ZFS_IS_VOLUME(zhp)) {
-			char *strval;
-
 			type = ZFS_TYPE_VOLUME;
-
-			if (zfs_which_resv_prop(zhp, &resv_prop) == 0 &&
-			    nvlist_lookup_string(props,
-			    zfs_prop_to_name(resv_prop), &strval) == 0 &&
-			    strcmp(strval, "auto") == 0) {
-				fnvlist_remove(props,
-				    zfs_prop_to_name(resv_prop));
-				auto_resv = B_TRUE;
-			}
 		} else {
 			type = ZFS_TYPE_FILESYSTEM;
 		}
 		if ((props = zfs_valid_proplist(hdl, type, props, zoned,
 		    zhp, zhp->zpool_hdl, errbuf)) == NULL)
 			return (-1);
-	}
-
-	if (auto_resv) {
-		if (zfs_add_auto_resv(zhp, resv_prop, props) != 1) {
+		if (zfs_fix_auto_resv(zhp, props) == -1) {
 			nvlist_free(props);
-			return (zfs_error(hdl, EZFS_BADPROP, errbuf));
+			return (-1);
 		}
 	}
 
