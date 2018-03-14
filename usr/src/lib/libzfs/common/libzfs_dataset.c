@@ -1390,6 +1390,18 @@ badlabel:
 			char buf[64];
 
 			switch (prop) {
+			case ZFS_PROP_RESERVATION:
+			case ZFS_PROP_REFRESERVATION:
+				if (intval > volsize && intval != UINT64_MAX) {
+					zfs_error_aux(hdl, dgettext(TEXT_DOMAIN,
+					    "'%s' is greater than current "
+					    "volume size"), propname);
+					(void) zfs_error(hdl, EZFS_BADPROP,
+					    errbuf);
+					goto error;
+				}
+				break;
+
 			case ZFS_PROP_VOLSIZE:
 				if (intval % blocksize != 0) {
 					zfs_nicenum(blocksize, buf,
@@ -1491,13 +1503,20 @@ zfs_add_synthetic_resv(zfs_handle_t *zhp, nvlist_t *nvl)
 	return (1);
 }
 
+/*
+ * Helper for 'zfs set [ref]reservation=auto'.  Return codes must match
+ * zfs_add_synthetic_resv().
+ */
 static int
 zfs_add_auto_resv(zfs_handle_t *zhp, zfs_prop_t prop, nvlist_t *nvl)
 {
 	uint64_t volsize;
-	uint64_t copies;
 	uint64_t resvsize;
 	nvlist_t *props;
+
+	if (nvlist_exists(nvl, zfs_prop_to_name(prop))) {
+		return (0);
+	}
 
 	props = fnvlist_alloc();
 
@@ -1508,12 +1527,6 @@ zfs_add_auto_resv(zfs_handle_t *zhp, zfs_prop_t prop, nvlist_t *nvl)
 	    &volsize) != 0) {
 		volsize = zfs_prop_get_int(zhp, ZFS_PROP_VOLSIZE);
 	}
-
-	if (nvlist_lookup_uint64(nvl, zfs_prop_to_name(ZFS_PROP_COPIES),
-	    &copies) != 0) {
-		copies = zfs_prop_get_int(zhp, ZFS_PROP_COPIES);
-	}
-	fnvlist_add_uint64(props, zfs_prop_to_name(ZFS_PROP_COPIES), copies);
 
 	resvsize = zvol_volsize_to_reservation(volsize, props);
 	fnvlist_free(props);
@@ -1668,11 +1681,26 @@ zfs_prop_set_list(zfs_handle_t *zhp, nvlist_t *props)
 	nvlist_t *nvl;
 	int nvl_len;
 	int added_resv = 0;
-	zfs_prop_t auto_resv_prop = ZPROP_INVAL;
+	zfs_prop_t resv_prop;
+	boolean_t auto_resv = B_FALSE;
+	char *strval;
 
 	(void) snprintf(errbuf, sizeof (errbuf),
 	    dgettext(TEXT_DOMAIN, "cannot set property for '%s'"),
 	    zhp->zfs_name);
+
+	/*
+	 * zfs_valid_proplist() is likely missing information required to
+	 * translate "auto" into a reasonable reservation.  Strip
+	 * [ref]reservation=auto from props before passing to
+	 * zfs_valid_proplist().
+	 */
+	if (zfs_which_resv_prop(zhp, &resv_prop) == 0 &&
+	    nvlist_lookup_string(props, zfs_prop_to_name(resv_prop),
+	    &strval) == 0 && strcmp(strval, "auto") == 0) {
+		fnvlist_remove(props, zfs_prop_to_name(resv_prop));
+		auto_resv = B_TRUE;
+	}
 
 	if ((nvl = zfs_valid_proplist(hdl, zhp->zfs_type, props,
 	    zfs_prop_get_int(zhp, ZFS_PROP_ZONED), zhp, zhp->zpool_hdl,
@@ -1686,33 +1714,19 @@ zfs_prop_set_list(zfs_handle_t *zhp, nvlist_t *props)
 	for (nvpair_t *elem = nvlist_next_nvpair(nvl, NULL);
 	    elem != NULL;
 	    elem = nvlist_next_nvpair(nvl, elem)) {
-		uint64_t resv;
-		zfs_prop_t prop;
-
-		prop = zfs_name_to_prop(nvpair_name(elem));
-		switch (prop) {
-		case ZFS_PROP_REFRESERVATION:
-		case ZFS_PROP_RESERVATION:
-			if (nvpair_value_uint64(elem, &resv) == 0 &&
-			    resv == UINT64_MAX) {
-				if (nvlist_remove_nvpair(nvl, elem) != 0) {
-					goto error;
-				}
-				auto_resv_prop = prop;
-			}
-			break;
-		case ZFS_PROP_VOLSIZE:
-			added_resv = zfs_add_synthetic_resv(zhp, nvl);
-			if (added_resv == -1) {
-				goto error;
-			}
-			break;
-		default:
-			break;
+		if (zfs_name_to_prop(nvpair_name(elem)) == ZFS_PROP_VOLSIZE &&
+		    (added_resv = zfs_add_synthetic_resv(zhp, nvl)) == -1) {
+			goto error;
 		}
 	}
-	if (added_resv == 0 && auto_resv_prop != ZPROP_INVAL) {
-		zfs_add_auto_resv(zhp, auto_resv_prop, nvl);
+
+	/*
+	 * Delay update of reservation or refreservation until after any call
+	 * to zfs_add_synthetic_resv().  If it was called and returned 1, it has
+	 * already done the right thing.
+	 */
+	if (added_resv != 1 && auto_resv) {
+		added_resv = zfs_add_auto_resv(zhp, resv_prop, nvl);
 	}
 
 	/*
@@ -3713,6 +3727,8 @@ zfs_clone(zfs_handle_t *zhp, const char *target, nvlist_t *props)
 	char errbuf[1024];
 	libzfs_handle_t *hdl = zhp->zfs_hdl;
 	uint64_t zoned;
+	boolean_t auto_resv = B_FALSE;
+	zfs_prop_t resv_prop = ZPROP_INVAL;
 
 	assert(zhp->zfs_type == ZFS_TYPE_SNAPSHOT);
 
@@ -3734,13 +3750,31 @@ zfs_clone(zfs_handle_t *zhp, const char *target, nvlist_t *props)
 	if (props) {
 		zfs_type_t type;
 		if (ZFS_IS_VOLUME(zhp)) {
+			char *strval;
+
 			type = ZFS_TYPE_VOLUME;
+
+			if (zfs_which_resv_prop(zhp, &resv_prop) == 0 &&
+			    nvlist_lookup_string(props,
+			    zfs_prop_to_name(resv_prop), &strval) == 0 &&
+			    strcmp(strval, "auto") == 0) {
+				fnvlist_remove(props,
+				    zfs_prop_to_name(resv_prop));
+				auto_resv = B_TRUE;
+			}
 		} else {
 			type = ZFS_TYPE_FILESYSTEM;
 		}
 		if ((props = zfs_valid_proplist(hdl, type, props, zoned,
 		    zhp, zhp->zpool_hdl, errbuf)) == NULL)
 			return (-1);
+	}
+
+	if (auto_resv) {
+		if (zfs_add_auto_resv(zhp, resv_prop, props) != 1) {
+			nvlist_free(props);
+			return (zfs_error(hdl, EZFS_BADPROP, errbuf));
+		}
 	}
 
 	ret = lzc_clone(target, zhp->zfs_name, props);

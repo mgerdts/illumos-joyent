@@ -799,30 +799,6 @@ zfs_do_clone(int argc, char **argv)
 			return (1);
 	}
 
-	/* fix the [ref]reservation on volumes */
-	if ((snapname = zfs_get_name(zhp)) != NULL &&
-	    strlcpy(snapparent, snapname, sizeof (snapparent)) <
-	    sizeof (snapparent) && (at = strchr(snapparent, '@')) != NULL) {
-		zfs_handle_t *pzhp;
-
-		*at = '\0';
-		pzhp = zfs_open(g_zfs, snapparent, ZFS_TYPE_VOLUME);
-		if (pzhp != NULL) {
-			uint64_t volsize, blksize;
-
-			volsize = zfs_prop_get_int(pzhp, ZFS_PROP_VOLSIZE);
-			blksize = zfs_prop_get_int(pzhp, ZFS_PROP_VOLBLOCKSIZE);
-
-			if (fix_resv_prop(snapparent, volsize, blksize, props,
-			    B_FALSE) != 0) {
-				zfs_close(pzhp);
-				return (1);
-			}
-			zfs_close(pzhp);
-		}
-	}
-
-
 	/* pass to libzfs */
 	ret = zfs_clone(zhp, argv[1], props);
 
