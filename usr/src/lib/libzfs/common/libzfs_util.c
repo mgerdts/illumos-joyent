@@ -21,7 +21,7 @@
 
 /*
  * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2018 Joyent, Inc.
  * Copyright (c) 2011, 2015 by Delphix. All rights reserved.
  * Copyright 2016 Igor Kozhukhov <ikozhukhov@gmail.com>
  * Copyright (c) 2017 Datto Inc.
@@ -1270,8 +1270,7 @@ zprop_parse_value(libzfs_handle_t *hdl, nvpair_t *elem, int prop,
 
 		/*
 		 * Special handling for 'reservation' and 'refreservation'.  Use
-		 * UINT64_MAX to tell the caller to use
-		 * zvol_volsize_to_reservation()
+		 * UINT64_MAX to tell the caller to use zfs_fix_auto_resv().
 		 */
 		if ((type & ZFS_TYPE_VOLUME) && isauto &&
 		    (prop == ZFS_PROP_RESERVATION ||

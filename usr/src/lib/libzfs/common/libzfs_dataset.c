@@ -31,6 +31,7 @@
  * Copyright 2017 Nexenta Systems, Inc.
  * Copyright 2016 Igor Kozhukhov <ikozhukhov@gmail.com>
  * Copyright 2017 RackTop Systems.
+ * Copyright 2018 Joyent, Inc.
  */
 
 #include <ctype.h>
