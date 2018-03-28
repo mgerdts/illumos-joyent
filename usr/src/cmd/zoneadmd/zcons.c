@@ -744,6 +744,10 @@ do_console_io(zlog_t *zlogp, int consfd, int servfd)
 	char clilocale[MAXPATHLEN];
 	pid_t clipid = 0;
 	int disconnect = 0;
+	int conslog;
+
+	conslog = logstream_open(zlogp, "console.log", "console",
+	    LS_LINE_BUFFERED);
 
 	/* console side, watch for read events */
 	pollfds[0].fd = consfd;
@@ -783,6 +787,9 @@ do_console_io(zlog_t *zlogp, int consfd, int servfd)
 				if (cc <= 0 && (errno != EINTR) &&
 				    (errno != EAGAIN))
 					break;
+
+				logstream_write(conslog, ibuf, cc);
+
 				/*
 				 * Lose I/O if no one is listening
 				 */
@@ -891,6 +898,7 @@ do_console_io(zlog_t *zlogp, int consfd, int servfd)
 		(void) shutdown(clifd, SHUT_RDWR);
 		(void) close(clifd);
 	}
+	logstream_close(conslog);
 }
 
 int

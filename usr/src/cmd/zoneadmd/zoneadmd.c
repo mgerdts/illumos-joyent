@@ -141,6 +141,8 @@ static int	zone_door = -1;
 boolean_t in_death_throes = B_FALSE;	/* daemon is dying */
 boolean_t bringup_failure_recovery = B_FALSE; /* ignore certain failures */
 
+static int platlog = -1;	/* Handle for <zonepath>/logs/platform.log */
+
 #if !defined(TEXT_DOMAIN)		/* should be defined by cc -D */
 #define	TEXT_DOMAIN	"SYS_TEST"	/* Use this only if it wasn't */
 #endif
@@ -223,17 +225,14 @@ zerror(zlog_t *zlogp, boolean_t use_strerror, const char *fmt, ...)
 {
 	va_list alist;
 	char buf[MAXPATHLEN * 2]; /* enough space for err msg with a path */
-	char *bp;
+	char *bp, *bp_nozone;
 	int saved_errno = errno;
 
-	if (zlogp == NULL)
-		return;
 	if (zlogp == &logsys)
-		(void) snprintf(buf, sizeof (buf), "[zone '%s'] ",
-		    zone_name);
+		(void) snprintf(buf, sizeof (buf), "[zone '%s'] ", zone_name);
 	else
 		buf[0] = '\0';
-	bp = &(buf[strlen(buf)]);
+	bp = bp_nozone = &(buf[strlen(buf)]);
 
 	/*
 	 * In theory, the locale pointer should be set to either "C" or a
@@ -250,6 +249,12 @@ zerror(zlog_t *zlogp, boolean_t use_strerror, const char *fmt, ...)
 	if (use_strerror)
 		(void) snprintf(bp, sizeof (buf) - (bp - buf), ": %s",
 		    strerror(saved_errno));
+
+	logstream_write(platlog, bp_nozone, strlen(bp_nozone));
+	logstream_write(platlog, "\n", 1);
+	if (zlogp == NULL)
+		return;
+
 	if (zlogp == &logsys) {
 		(void) syslog(LOG_ERR, "%s", buf);
 	} else if (zlogp->logfile != NULL) {
@@ -1286,7 +1291,7 @@ zone_bootup(zlog_t *zlogp, const char *bootargs, int zstate, boolean_t debug)
 	notify_zonestatd(zone_id);
 
 	/* Startup a thread to perform zfd logging/tty svc for the zone. */
-	create_log_thread(zlogp, zone_id);
+	create_log_thread(zlogp);
 
 	if (zone_boot(zoneid) == -1) {
 		zerror(zlogp, B_TRUE, "unable to boot zone");
@@ -2168,7 +2173,7 @@ top:
 			 * so use logsys.
 			 */
 			if ((zid = getzoneidbyname(zone_name)) != -1) {
-				create_log_thread(&logsys, zid);
+				create_log_thread(&logsys);
 			}
 
 			/* recover the global configuration snapshot */
@@ -2609,6 +2614,13 @@ main(int argc, char *argv[])
 	openlog("zoneadmd", LOG_PID, LOG_DAEMON);
 
 	/*
+	 * Allow logging to <zonepath>/logs/<file>.
+	 */
+	logstream_init(zlogp);
+	platlog = logstream_open(zlogp, "platform.log", "zoneadmd",
+	    LS_LINE_BUFFERED);
+
+	/*
 	 * The eventstream is used to publish state changes in the zone
 	 * from the door threads to the console I/O poller.
 	 */
@@ -2627,7 +2639,6 @@ main(int argc, char *argv[])
 	if (make_daemon_exclusive(zlogp) == -1)
 		goto child_out;
 
-
 	/*
 	 * Create/join a new session; we need to be careful of what we do with
 	 * the console from now on so we don't end up being the session leader
@@ -2637,9 +2648,13 @@ main(int argc, char *argv[])
 
 	/*
 	 * This thread shouldn't be receiving any signals; in particular,
-	 * SIGCHLD should be received by the thread doing the fork().
+	 * SIGCHLD should be received by the thread doing the fork().  The
+	 * exceptions are SIGHUP and SIGUSR1 for log rotation, set up by
+	 * logstream_init().
 	 */
 	(void) sigfillset(&blockset);
+	(void) sigdelset(&blockset, SIGHUP);
+	(void) sigdelset(&blockset, SIGUSR1);
 	(void) thr_sigsetmask(SIG_BLOCK, &blockset, NULL);
 
 	/*
