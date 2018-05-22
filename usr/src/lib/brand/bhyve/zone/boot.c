@@ -32,9 +32,7 @@
 #include <unistd.h>
 #include <zone.h>
 
-/* These two paths must be relative to the zone root. */
-#define	BHYVE_DIR		"var/run/bhyve"
-#define	BHYVE_ARGS_FILE		BHYVE_DIR "/" "zhyve.cmd"
+#include "bhyve_brand.h"
 
 #define	ZH_MAXARGS		100
 
@@ -689,6 +687,20 @@ main(int argc, char **argv)
 		(void) unlink(BHYVE_ARGS_FILE);
 		return (1);
 	}
+
+	/*
+	 * Create a file that bhyve will remove when boot completes.  bootwait
+	 * then waits for its removal as part of the post-boot hook.
+	 */
+	fd = openat(zrfd, BHYVE_BOOT_WAIT_FILE, O_CREAT|O_EXCL|O_WRONLY, 0600);
+	if (fd == -1 && errno != EEXIST) {
+		(void) fprintf(stderr, "Error: cannot create %s: %s\n",
+		    BHYVE_BOOT_WAIT_FILE, strerror(errno));
+		return (-1);
+	}
+	(void) close(fd);
+
+	(void) close(zrfd);
 
 	return (0);
 }

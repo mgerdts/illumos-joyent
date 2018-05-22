@@ -80,6 +80,8 @@ __FBSDID("$FreeBSD$");
 
 #ifndef __FreeBSD__
 #include <sys/stat.h>
+#include <fcntl.h>
+#include "bhyve_brand.h"
 #endif
 
 #include "bhyverun.h"
@@ -969,22 +971,75 @@ do_open(const char *vmname)
 
 #define	FILE_PROVISIONING	"/var/svc/provisioning"
 #define	FILE_PROVISION_SUCCESS	"/var/svc/provision_success"
+#define	FILE_PROVISION_FAILURE	"/var/svc/provision_failure"
 
+static boolean_t guest_booted = B_FALSE;
+
+/*
+ * This is only relevant to the first boot after provisioning.  It is monitored
+ * by VM.js.
+ *
+ * XXX Code reviewers please comment:
+ *
+ *	If provisioning is renamed to provision_failure, vmadm still considers
+ *	it provisioned, as explained in this comment.
+ *
+ *              // So long as /var/svc/provisioning is gone, we don't care what
+ *              // replaced it.  Success or failure of user script doesn't
+ *              // matter for the state, it's provisioned now. Caller should
+ *              // now clear the transition.
+ *
+ *	If we don't rename provisioning and allow bhyve to exit, vmadm has to
+ *	wait for the timeout and then sets the status to failed.  Having to wait
+ *	many minutes for a failure that may have been evident within a fraction
+ *	of a second is a bad experience as well.
+ *
+ *	It would seem better if the exit value of 'zoneadm boot' could be used.
+ *	That causes problems explained in /usr/lib/brand/jcommon/statechange and
+ *	more verbosely in OS-6717.
+ */
 static void
-mark_provisioned(void)
+mark_provisioned(boolean_t success)
 {
 	struct stat stbuf;
+	const char *fname;
 
 	if (lstat(FILE_PROVISIONING, &stbuf) != 0)
 		return;
 
-	if (rename(FILE_PROVISIONING, FILE_PROVISION_SUCCESS) != 0) {
+	fname = success ? FILE_PROVISION_SUCCESS : FILE_PROVISION_FAILURE;
+	if (rename(FILE_PROVISIONING, fname) != 0) {
 		(void) fprintf(stderr, "Cannot rename %s to %s: %s\n",
-		    FILE_PROVISIONING, FILE_PROVISION_SUCCESS,
-		    strerror(errno));
+		    FILE_PROVISIONING, fname, strerror(errno));
 	}
 }
 
+static void
+mark_guest_ready(void)
+{
+	/*
+	 * This is is monitored by /usr/lib/brand/bhyve/bootwait as part of a
+	 * postboot hook.
+	 */
+	if (unlink(BHYVE_BOOT_WAIT_FILE) == -1) {
+		(void) fprintf(stderr, "Failed to remove %s\n",
+		    BHYVE_BOOT_WAIT_FILE);
+	}
+
+	mark_provisioned(B_TRUE);
+
+	guest_booted = B_TRUE;
+}
+
+static void
+mark_guest_dead(void)
+{
+	if (guest_booted) {
+		return;
+	}
+
+	mark_provisioned(B_FALSE);
+}
 #endif
 
 int
@@ -1011,6 +1066,10 @@ main(int argc, char *argv[])
 	mptgen = 1;
 	rtc_localtime = 1;
 	memflags = 0;
+
+#ifndef __FreeBSD__
+	(void) atexit(mark_guest_dead);
+#endif
 
 #ifdef	__FreeBSD__
 	optstr = "abehuwxACHIPSWYp:g:G:c:s:m:l:B:U:";
@@ -1261,7 +1320,7 @@ main(int argc, char *argv[])
 	fbsdrun_addcpu(ctx, BSP, BSP, rip);
 
 #ifndef __FreeBSD__
-	mark_provisioned();
+	mark_guest_ready();
 #endif
 
 	/*

@@ -83,7 +83,7 @@ OBJS = $(SRCS:.c=.o)
 CLOBBERFILES =	$(ROOTUSRSBINPROG) $(ZHYVE)
 
 ZHYVE_DIR =	$(ROOT)/usr/lib/brand/bhyve
-ZHYVE_PROG = 	zhyve
+ZHYVE_PROG =	zhyve
 ZHYVE =		$(ZHYVE_DIR)/$(ZHYVE_PROG)
 
 MEVENT_TEST_PROG = mevent_test
@@ -104,6 +104,7 @@ CPPFLAGS =	-I$(COMPAT)/freebsd -I$(CONTRIB)/freebsd \
 		-I$(SRC)/uts/common \
 		-I$(SRC)/uts/i86pc \
 		-I$(SRC)/lib/libdladm/common \
+		-I$(SRC)/lib/brand/bhyve/zone \
 		-DWITHOUT_CAPSICUM
 
 # Disable the crypto code until it is wired up

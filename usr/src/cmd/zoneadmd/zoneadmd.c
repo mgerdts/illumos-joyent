@@ -1782,6 +1782,38 @@ server(void *cookie, char *args, size_t alen, door_desc_t *dp,
 	 */
 	zlog.locale = kernelcall ? DEFAULT_LOCALE : zargp->locale;
 
+	/*
+	 * The system must be able to deal with a zone dying while "lock" is
+	 * held (e.g. via "poweroff" within bhyve) so we just as well let
+	 * "zoneadm halt" and guest initiated "halt" have the same power.
+	 * Otherwise, a zone that is stuck between boot and postboot can block
+	 * halt forever.
+	 */
+	if (!in_death_throes && cmd == Z_HALT &&
+	    zone_get_state(zone_name, &zstate) == Z_OK &&
+	    zstate == ZONE_STATE_RUNNING) {
+		if (kernelcall) {
+			log_init_exit(init_status);
+		} else {
+			log_init_exit(-1);
+		}
+		if ((rval = zone_halt(zlogp, B_FALSE, B_FALSE, zstate,
+		    debug)) == 0) {
+			eventstream_write(Z_EVT_ZONE_HALTED);
+			zcons_statechanged();
+
+			/*
+			 * The zone should now come down quickly, unwedging
+			 * other server() threads.  Take the lock and proceed
+			 * with the normal return path.
+			 */
+			(void) mutex_lock(&lock);
+
+			eventstream_write(Z_EVT_NULL);
+			goto out;
+		}
+	}
+
 	(void) mutex_lock(&lock);
 
 	/*

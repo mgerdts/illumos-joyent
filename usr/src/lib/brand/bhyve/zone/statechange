@@ -19,4 +19,9 @@ typeset -A FORCED_ATTRS
 FORCED_ATTRS["zlog-mode"]=g--
 FORCED_ATTRS["zlog-name"]=platform.log
 
+function bhyve_post_boot {
+	 ctrun -l child -o pgrponly /usr/lib/brand/bhyve/bootwait "$ZONENAME"
+	 return $?
+}
+
 . /usr/lib/brand/jcommon/statechange
