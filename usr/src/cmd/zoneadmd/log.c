@@ -236,26 +236,6 @@ logstream_unlock(void)
 }
 
 static void
-logfile_write_event(logfile_t *lfp, const char *stream, const char *event)
-{
-	char buf[BUFSIZ];
-	size_t len;
-	jsonpair_t pairs[] = {
-		{ "event", event },
-		{ "stream", stream }
-	};
-
-	len = make_json(pairs, ARRAY_SIZE(pairs), buf, sizeof (buf));
-	if (len >= sizeof (buf)) {
-		logstream_err(B_FALSE, "%s: buffer too small. Need %llu bytes, "
-		    "have %llu bytes", __func__, len + 1, sizeof (buf));
-		return;
-	}
-
-	logfile_write(lfp, buf, len);
-}
-
-static void
 close_log(logfile_t *lfp, const char *why)
 {
 	int err;
@@ -273,8 +253,6 @@ close_log(logfile_t *lfp, const char *why)
 	lfp->lf_closing = B_TRUE;
 
 	logstream_flush_all(lfp);
-
-	logfile_write_event(lfp, "logfile", why);
 
 	err = close(lfp->lf_fd);
 	assert(err == 0);
@@ -306,8 +284,6 @@ open_log(logfile_t *lfp, const char *why)
 	lfp->lf_size = sb.st_size;
 	lfp->lf_write_err = B_FALSE;
 	lfp->lf_closing = B_FALSE;
-
-	logfile_write_event(lfp, "logfile", why);
 }
 
 static void
