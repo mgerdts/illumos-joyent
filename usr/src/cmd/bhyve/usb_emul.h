@@ -35,6 +35,7 @@
 #include <pthread.h>
 #ifndef __FreeBSD__
 #include <synch.h>
+#include "sol_lock.h"
 #endif
 
 #define	USB_MAX_XFER_BLOCKS	8

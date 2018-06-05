@@ -1,6 +1,7 @@
 /*-
  * Copyright (c) 2015 Tycho Nightingale <tycho.nightingale@pluribusnetworks.com>
  * Copyright (c) 2015 Nahanni Systems Inc.
+ * Copyright 2018 Joyent, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,6 +38,10 @@ __FBSDID("$FreeBSD$");
 #include <strings.h>
 #include <pthread.h>
 #include <pthread_np.h>
+
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
 
 #include "atkbdc.h"
 #include "console.h"

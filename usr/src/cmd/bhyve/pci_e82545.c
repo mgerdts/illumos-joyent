@@ -2,6 +2,7 @@
  * Copyright (c) 2016 Alexander Motin <mav@FreeBSD.org>
  * Copyright (c) 2015 Peter Grehan <grehan@freebsd.org>
  * Copyright (c) 2013 Jeremiah Lott, Avere Systems
+ * Copyright 2018 Joyent, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,6 +56,10 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 #include <pthread.h>
 #include <pthread_np.h>
+
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
 
 #include "e1000_regs.h"
 #include "e1000_defines.h"

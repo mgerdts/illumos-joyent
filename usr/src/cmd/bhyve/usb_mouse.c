@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2014 Leon Dang <ldang@nahannisys.com>
+ * Copyright 2018 Joyent, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,6 +37,10 @@ __FBSDID("$FreeBSD$");
 
 #include <dev/usb/usb.h>
 #include <dev/usb/usbdi.h>
+
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
 
 #include "usb_emul.h"
 #include "console.h"

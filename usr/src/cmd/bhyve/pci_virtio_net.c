@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
  *
  * Copyright (c) 2011 NetApp, Inc.
+ * Copyright 2018 Joyent, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,7 +39,6 @@
  * http://www.illumos.org/license/CDDL.
  *
  * Copyright 2013 Pluribus Networks Inc.
- * Copyright 2017 Joyent, Inc.
  */
 
 #include <sys/cdefs.h>
@@ -78,6 +78,7 @@ __FBSDID("$FreeBSD$");
 #ifndef __FreeBSD__
 #include <poll.h>
 #include <libdlpi.h>
+#include "sol_lock.h"
 #endif
 
 #include "bhyverun.h"

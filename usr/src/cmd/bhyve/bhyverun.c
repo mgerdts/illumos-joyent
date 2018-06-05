@@ -80,6 +80,7 @@ __FBSDID("$FreeBSD$");
 
 #ifndef __FreeBSD__
 #include <sys/stat.h>
+#include "sol_lock.h"
 #endif
 
 #include "bhyverun.h"
@@ -134,7 +135,7 @@ static const int BSP = 0;
 #ifndef	__FreeBSD__
 int bcons_wait = 0;
 int bcons_connected = 0;
-pthread_mutex_t bcons_wait_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t bcons_wait_lock = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
 pthread_cond_t bcons_wait_done = PTHREAD_COND_INITIALIZER;
 #endif
 
@@ -713,7 +714,11 @@ vmexit_inst_emul(struct vmctx *ctx, struct vm_exit *vmexit, int *pvcpu)
 	return (VMEXIT_CONTINUE);
 }
 
+#ifdef __FreeBSD__
 static pthread_mutex_t resetcpu_mtx = PTHREAD_MUTEX_INITIALIZER;
+#else
+static pthread_mutex_t resetcpu_mtx = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
+#endif
 static pthread_cond_t resetcpu_cond = PTHREAD_COND_INITIALIZER;
 
 static int

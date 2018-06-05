@@ -55,11 +55,19 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
+
 #include "mevent.h"
 
 #define TEST_PORT	4321
 
+#ifdef __FreeBSD__
 static pthread_mutex_t accept_mutex = PTHREAD_MUTEX_INITIALIZER;
+#else
+static pthread_mutex_t accept_mutex = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
+#endif
 static pthread_cond_t accept_condvar = PTHREAD_COND_INITIALIZER;
 
 static struct mevent *tevp;

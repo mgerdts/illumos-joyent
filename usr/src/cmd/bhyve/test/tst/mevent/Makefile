@@ -21,7 +21,7 @@ EXETESTS = \
 		read.requeue.exe \
 
 SHTESTS =
-SUPOBJS =	mevent.o testlib.o
+SUPOBJS =	mevent.o testlib.o ../../../sol_lock.o
 
 include ../../Makefile.com
 

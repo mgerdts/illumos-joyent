@@ -60,6 +60,10 @@ __FBSDID("$FreeBSD$");
 #include <machine/vmm.h>
 #include <vmmapi.h>
 
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
+
 #include "acpi.h"
 #include "bhyverun.h"
 #include "inout.h"

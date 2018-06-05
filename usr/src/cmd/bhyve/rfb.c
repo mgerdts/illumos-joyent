@@ -59,6 +59,7 @@ __FBSDID("$FreeBSD$");
 
 #ifndef __FreeBSD__
 #include <sys/debug.h>
+#include "sol_lock.h"
 #endif
 
 #include "bhyvegc.h"

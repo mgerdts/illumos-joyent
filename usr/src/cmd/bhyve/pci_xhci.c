@@ -52,6 +52,10 @@ __FBSDID("$FreeBSD$");
 #include <dev/usb/usb_freebsd.h>
 #include <xhcireg.h>
 
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
+
 #include "bhyverun.h"
 #include "pci_emul.h"
 #include "pci_xhci.h"

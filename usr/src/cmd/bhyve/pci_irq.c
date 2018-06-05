@@ -1,6 +1,7 @@
 /*-
  * Copyright (c) 2014 Hudson River Trading LLC
  * Written by: John H. Baldwin <jhb@FreeBSD.org>
+ * Copyright 2018 Joyent, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,6 +39,10 @@ __FBSDID("$FreeBSD$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <vmmapi.h>
+
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
 
 #include "acpi.h"
 #include "inout.h"

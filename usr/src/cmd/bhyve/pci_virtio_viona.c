@@ -63,6 +63,10 @@
 #include <machine/vmm.h>
 #include <vmmapi.h>
 
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
+
 #include "bhyverun.h"
 #include "pci_emul.h"
 #include "virtio.h"

@@ -45,6 +45,10 @@ __FBSDID("$FreeBSD$");
 #include <signal.h>
 #include <vmmapi.h>
 
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
+
 #include "acpi.h"
 #include "inout.h"
 #ifdef	__FreeBSD__
@@ -53,11 +57,12 @@ __FBSDID("$FreeBSD$");
 #include "pci_irq.h"
 #include "pci_lpc.h"
 
-static pthread_mutex_t pm_lock = PTHREAD_MUTEX_INITIALIZER;
 #ifdef	__FreeBSD__
+static pthread_mutex_t pm_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct mevent *power_button;
 static sig_t old_power_handler;
 #else
+static pthread_mutex_t pm_lock = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
 struct vmctx *pwr_ctx;
 #endif
 

@@ -66,6 +66,7 @@ SRCS =	acpi.c			\
 	rfb.c			\
 	rtc.c			\
 	smbiostbl.c		\
+	sol_lock.c		\
 	sockstream.c		\
 	task_switch.c		\
 	uart_emul.c		\
@@ -87,7 +88,7 @@ ZHYVE_PROG = 	zhyve
 ZHYVE =		$(ZHYVE_DIR)/$(ZHYVE_PROG)
 
 MEVENT_TEST_PROG = mevent_test
-MEVENT_TEST_SRCS = mevent.c mevent_test.c
+MEVENT_TEST_SRCS = mevent.c mevent_test.c sol_lock.c
 MEVENT_TEST_OBJS = $(MEVENT_TEST_SRCS:.c=.o)
 
 CLEANFILES =	$(PROG) $(ZHYVE_PROG) $(MEVENT_TEST_PROG) $(MEVENT_TEST_OBJS)

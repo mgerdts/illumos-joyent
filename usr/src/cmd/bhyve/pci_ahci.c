@@ -3,6 +3,7 @@
  *
  * Copyright (c) 2013  Zhixiang Yu <zcore@freebsd.org>
  * Copyright (c) 2015-2016 Alexander Motin <mav@FreeBSD.org>
+ * Copyright 2018 Joyent, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -54,6 +55,10 @@ __FBSDID("$FreeBSD$");
 #include <pthread_np.h>
 #include <inttypes.h>
 #include <md5.h>
+
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
 
 #include "bhyverun.h"
 #include "pci_emul.h"

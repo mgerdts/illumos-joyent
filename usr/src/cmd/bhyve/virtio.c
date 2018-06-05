@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
  *
  * Copyright (c) 2013  Chris Torek <torek @ torek net>
+ * Copyright 2018 Joyent, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,6 +37,10 @@ __FBSDID("$FreeBSD$");
 #include <stdint.h>
 #include <pthread.h>
 #include <pthread_np.h>
+
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
 
 #include "bhyverun.h"
 #include "pci_emul.h"

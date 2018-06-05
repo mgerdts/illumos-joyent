@@ -66,6 +66,10 @@ __FBSDID("$FreeBSD$");
 #include <pthread.h>
 #include <pthread_np.h>
 
+#ifndef __FreeBSD__
+#include "sol_lock.h"
+#endif
+
 #include "mevent.h"
 
 #define	MEVENT_MAX	64
@@ -80,7 +84,11 @@ extern char *vmname;
 static pthread_t mevent_tid;
 static int mevent_timid = 43;
 static int mevent_pipefd[2];
+#ifdef __FreeBSD__
 static pthread_mutex_t mevent_lmutex = PTHREAD_MUTEX_INITIALIZER;
+#else
+static pthread_mutex_t mevent_lmutex = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
+#endif
 
 struct mevent {	
 	void	(*me_func)(int, enum ev_type, void *);
@@ -402,8 +410,6 @@ static void
 mevent_handle_pe(port_event_t *pe)
 {
 	struct mevent *mevp = pe->portev_user;
-
-	mevent_qunlock();
 
 	(*mevp->me_func)(mevp->me_fd, mevp->me_type, mevp->me_param);
 

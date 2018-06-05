@@ -73,6 +73,7 @@ __FBSDID("$FreeBSD$");
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include "sol_lock.h"
 #endif
 
 #include "mevent.h"

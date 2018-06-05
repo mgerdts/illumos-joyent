@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
  *
  * Copyright (c) 2013  Peter Grehan <grehan@freebsd.org>
+ * Copyritht 2018 Joyent, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,6 +61,8 @@ __FBSDID("$FreeBSD$");
 #include "bhyverun.h"
 #ifdef	__FreeBSD__
 #include "mevent.h"
+#else
+#include "sol_lock.h"
 #endif
 #include "block_if.h"
 
