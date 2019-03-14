@@ -341,7 +341,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 		size = *eol - (out-begin);
 		if(mode=='\\')
 		{
-			int c;
+			int c=0;
 			if(dir)
 			{
 				c = *dir;

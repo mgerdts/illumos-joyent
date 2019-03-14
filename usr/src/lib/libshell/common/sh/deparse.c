@@ -74,7 +74,7 @@ void sh_deparse(Sfio_t *out, const Shnode_t *t,int tflags)
  */
 static void p_tree(register const Shnode_t *t,register int tflags)
 {
-	register char *cp;
+	register char *cp=NULL;
 	int save = end_line;
 	int needbrace = (tflags&NEED_BRACE);
 	tflags &= ~NEED_BRACE;
@@ -378,7 +378,7 @@ static void p_keyword(const char *word,int flag)
 static void p_arg(register const struct argnod *arg,register int endchar,int opts)
 {
 	register const char *cp;
-	register int flag;
+	register int flag=0;
 	do
 	{
 		if(!arg->argnxt.ap)
@@ -417,7 +417,7 @@ static void p_arg(register const struct argnod *arg,register int endchar,int opt
 static void p_redirect(register const struct ionod *iop)
 {
 	register char *cp;
-	register int iof,iof2;
+	register int iof,iof2=0;
 	for(;iop;iop=iop->ionxt)
 	{
 		iof=iop->iofile;

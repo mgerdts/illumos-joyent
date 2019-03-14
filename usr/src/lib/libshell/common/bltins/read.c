@@ -203,14 +203,14 @@ static void timedout(void *handle)
 
 int sh_readline(register Shell_t *shp,char **names, int fd, int flags,long timeout)
 {
-	register ssize_t	c;
+	register ssize_t	c=0;
 	register unsigned char	*cp;
 	register Namval_t	*np;
 	register char		*name, *val;
 	register Sfio_t		*iop;
 	Namfun_t		*nfp;
-	char			*ifs;
-	unsigned char		*cpmax;
+	char			*ifs=NULL;
+	unsigned char		*cpmax=NULL;
 	unsigned char		*del;
 	char			was_escape = 0;
 	char			use_stak = 0;

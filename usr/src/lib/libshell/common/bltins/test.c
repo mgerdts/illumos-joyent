@@ -459,7 +459,7 @@ int test_unop(register int op,register const char *arg)
 
 int test_binop(register int op,const char *left,const char *right)
 {
-	register double lnum,rnum;
+	register double lnum=0.0,rnum=0.0;
 	if(op&TEST_ARITH)
 	{
 		while(*left=='0')

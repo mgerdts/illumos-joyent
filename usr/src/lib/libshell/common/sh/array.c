@@ -796,7 +796,7 @@ static Namarr_t *nv_changearray(Namval_t *np, void *(*fun)(Namval_t*,const char*
  */
 Namarr_t *nv_setarray(Namval_t *np, void *(*fun)(Namval_t*,const char*,int))
 {
-	register Namarr_t *ap;
+	register Namarr_t *ap=NULL;
 	char		*value=0;
 	Namfun_t	*fp;
 	int		nelem = 0;

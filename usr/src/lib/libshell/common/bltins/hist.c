@@ -46,7 +46,7 @@ int	b_hist(int argc,char *argv[], void *extra)
 	register int flag,fdo;
 	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
 	Sfio_t *outfile;
-	char *fname;
+	char *fname=NULL;
 	int range[2], incr, index2, indx= -1;
 	char *edit = 0;		/* name of editor */
 	char *replace = 0;		/* replace old=new */

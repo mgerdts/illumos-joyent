@@ -204,7 +204,7 @@ void nv_outname(Sfio_t *out, char *name, int len)
 Namval_t *nv_addnode(Namval_t* np, int remove)
 {
 	register struct sh_type	*sp = (struct sh_type*)sh.mktype;
-	register int		i;
+	register int		i=0;
 	register char		*name=0;
 	if(sp->numnodes==0 && !nv_isnull(np) && sh.last_table)
 	{
@@ -1119,13 +1119,13 @@ Namval_t *nv_open(const char *name, Dt_t *root, int flags)
 	Shell_t			*shp = &sh;
 	register char		*cp=(char*)name;
 	register int		c;
-	register Namval_t	*np;
+	register Namval_t	*np=NULL;
 	Namfun_t		fun;
 	int			append=0;
 	const char		*msg = e_varname;
 	char			*fname = 0;
 	int			offset = staktell();
-	Dt_t			*funroot;
+	Dt_t			*funroot=NULL;
 #if NVCACHE
 	struct Cache_entry	*xp;
 #endif
@@ -1566,7 +1566,7 @@ void nv_putval(register Namval_t *np, const char *string, int flags)
 	else
 	{
 		const char *tofree=0;
-		int offset;
+		int offset=0;
 #if _lib_pathnative
 		char buff[PATH_MAX];
 #endif /* _lib_pathnative */
@@ -1793,10 +1793,10 @@ static void rightjust(char *str, int size, int fill)
     static int ja_size(char *str,int size,int type)
     {
 	register char *cp = str;
-	register int c, n=size;
+	register int c=0, n=size;
 	register int outsize;
 	register char *oldcp=cp;
-	int oldn;
+	int oldn=0;
 	wchar_t w;
 	while(*cp)
 	{

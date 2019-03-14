@@ -837,7 +837,7 @@ static int io_patseek(Shell_t *shp, regex_t *rp, Sfio_t* sp, int flags)
 {
 	char	*cp, *match;
 	int	r, fd=sffileno(sp), close_exec = shp->fdstatus[fd]&IOCLEX;
-	int	was_share,s=(PIPE_BUF>SF_BUFSIZE?SF_BUFSIZE:PIPE_BUF);
+	int	was_share=0,s=(PIPE_BUF>SF_BUFSIZE?SF_BUFSIZE:PIPE_BUF);
 	size_t	n,m;
 	shp->fdstatus[sffileno(sp)] |= IOCLEX;
 	if(fd==0)
@@ -961,7 +961,7 @@ int	sh_redirect(Shell_t *shp,struct ionod *iop, int flag)
 {
 	Sfoff_t off; 
 	register char *fname;
-	register int 	fd, iof;
+	register int 	fd=0, iof;
 	const char *message = e_open;
 	int o_mode;		/* mode flag for open */
 	static char io_op[7];	/* used for -x trace info */

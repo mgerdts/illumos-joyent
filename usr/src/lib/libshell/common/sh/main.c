@@ -138,7 +138,7 @@ int sh_source(Shell_t *shp, Sfio_t *iop, const char *file)
 int sh_main(int ac, char *av[], Shinit_f userinit)
 {
 	register char	*name;
-	register int	fdin;
+	register int	fdin=0;
 	register Sfio_t  *iop;
 	register Shell_t *shp;
 	struct stat	statb;

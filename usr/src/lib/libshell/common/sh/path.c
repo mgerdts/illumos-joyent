@@ -227,7 +227,7 @@ static pid_t path_xargs(const char *path, char *argv[],char *const envp[], int s
  */
 char *path_pwd(int flag)
 {
-	register char *cp;
+	register char *cp=NULL;
 	register char *dfault = (char*)e_dot;
 	register int count = 0;
 	Shell_t *shp = &sh;
@@ -1012,7 +1012,7 @@ pid_t path_spawn(const char *opath,register char **argv, char **envp, Pathcomp_t
 {
 	Shell_t *shp = sh_getinterp();
 	register char *path;
-	char **xp=0, *xval, *libenv = (libpath?libpath->lib:0); 
+	char **xp=0, *xval=NULL, *libenv = (libpath?libpath->lib:0); 
 	Namval_t*	np;
 	char		*s, *v;
 	int		r, n, pidsize;
@@ -1567,7 +1567,7 @@ Pathcomp_t *path_addpath(Pathcomp_t *first, register const char *path,int type)
 	register const char *cp;
 	Pathcomp_t *old=0;
 	int offset = staktell();
-	char *savptr;
+	char *savptr=NULL;
 	
 	if(!path && type!=PATH_PATH)
 		return(first);

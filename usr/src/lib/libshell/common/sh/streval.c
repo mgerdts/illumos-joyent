@@ -497,7 +497,7 @@ static int expr(register struct vars *vp,register int precedence)
 {
 	register int	c, op;
 	int		invalid,wasop=0;
-	struct lval	lvalue,assignop;
+	struct lval	lvalue,assignop={0};
 	const char	*pos;
 	Sfdouble_t	d;
 

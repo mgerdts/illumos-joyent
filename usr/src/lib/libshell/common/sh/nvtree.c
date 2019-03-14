@@ -144,7 +144,7 @@ static  Namfun_t *nextdisc(Namval_t *np)
 void *nv_diropen(Namval_t *np,const char *name)
 {
 	char *next,*last;
-	int c,len=strlen(name);
+	int c=0,len=strlen(name);
 	struct nvdir *save, *dp = new_of(struct nvdir,len);
 	Namval_t *nq=0,fake;
 	Namfun_t *nfp=0;
@@ -645,7 +645,7 @@ void nv_outnode(Namval_t *np, Sfio_t* out, int indent, int special)
 
 static void outval(char *name, const char *vname, struct Walk *wp)
 {
-	register Namval_t *np, *nq;
+	register Namval_t *np, *nq=NULL;
         register Namfun_t *fp;
 	int isarray=0, special=0,mode=0;
 	if(*name!='.' || vname[strlen(vname)-1]==']')

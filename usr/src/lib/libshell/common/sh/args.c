@@ -145,7 +145,7 @@ int sh_argopts(int argc,register char *argv[], void *context)
 	int setflag=0, action=0, trace=(int)sh_isoption(SH_XTRACE);
 	Namval_t *np = NIL(Namval_t*);
 	const char *cp;
-	int verbose,f;
+	int verbose=0,f;
 	Optdisc_t disc;
 	newflags=ap->sh->options;
 	memset(&disc, 0, sizeof(disc));
@@ -699,7 +699,7 @@ void sh_printopts(Shopt_t oflags,register int mode, Shopt_t *mask)
  */
 char **sh_argbuild(Shell_t *shp,int *nargs, const struct comnod *comptr,int flag)
 {
-	register struct argnod	*argp;
+	register struct argnod	*argp=NULL;
 	struct argnod *arghead=0;
 	shp->xargmin = 0;
 	{

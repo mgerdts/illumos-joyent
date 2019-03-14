@@ -1107,7 +1107,7 @@ char *hist_word(char *string,int size,int word)
 
 Histloc_t hist_locate(History_t *hp,register int command,register int line,int lines)
 {
-	Histloc_t next;
+	Histloc_t next={0};
 	line += lines;
 	if(!hp)
 	{

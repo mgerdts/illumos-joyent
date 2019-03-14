@@ -138,12 +138,12 @@ int hist_expand(const char *ln, char **xp)
 	int	off,	/* stack offset */
 		q,	/* quotation flags */
 		p,	/* flag */
-		c,	/* current char */
+		c=0,	/* current char */
 		flag=0;	/* HIST_* flags */
 	Sfoff_t	n,	/* history line number, counter, etc. */
 		i,	/* counter */
 		w[2];	/* word range */
-	char	*sp,	/* stack pointer */
+	char	*sp=NULL,	/* stack pointer */
 		*cp,	/* current char in ln */
 		*str,	/* search string */
 		*evp,	/* event/word designator string, for error msgs */

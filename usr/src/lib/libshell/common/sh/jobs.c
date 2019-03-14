@@ -244,7 +244,7 @@ static struct jobsave *jobsave_create(pid_t pid)
 int job_reap(register int sig)
 {
 	register pid_t pid;
-	register struct process *pw;
+	register struct process *pw=NULL;
 	struct process *px;
 	register int flags;
 	struct jobsave *jp;

@@ -822,7 +822,7 @@ void nv_newtype(Namval_t *mp)
 Namval_t *nv_mktype(Namval_t **nodes, int numnodes)
 {
 	Namval_t	*mp=nodes[0], *bp=0, *np, *nq, **mnodes=nodes;
-	int		i,j,k,m,n,nd=0,nref=0,iref=0,inherit=0;
+	int		i,j,k,m,n=0,nd=0,nref=0,iref=0,inherit=0;
 	int		size=sizeof(NV_DATA), dsize=0, nnodes;
 	size_t		offset=0;
 	char		*name=0, *cp, *sp, **help;

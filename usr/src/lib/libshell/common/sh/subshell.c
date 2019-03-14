@@ -475,7 +475,7 @@ Sfio_t *sh_subshell(Shnode_t *t, int flags, int comsub)
 	int savecurenv = shp->curenv;
 	int savejobpgid = job.curpgid;
 	int16_t subshell;
-	char *savsig;
+	char *savsig=NULL;
 	Sfio_t *iop=0;
 	struct checkpt buff;
 	struct sh_scoped savst;

@@ -1030,13 +1030,13 @@ static int varsub(Mac_t *mp)
 {
 	register int	c;
 	register int	type=0; /* M_xxx */
-	register char	*v,*argp=0;
+	register char	*v=NULL,*argp=NULL;
 	register Namval_t	*np = NIL(Namval_t*);
 	register int 	dolg=0, mode=0;
 	Lex_t		*lp = (Lex_t*)mp->shp->lex_context;
 	Namarr_t	*ap=0;
 	int		dolmax=0, vsize= -1, offset= -1, nulflg, replen=0, bysub=0;
-	char		idbuff[3], *id = idbuff, *pattern=0, *repstr, *arrmax=0;
+	char		idbuff[3], *id = idbuff, *pattern=0, *repstr=0, *arrmax=0;
 	int		var=1,addsub=0,oldpat=mp->pattern,idnum=0,flag=0,d;
 	Stk_t		*stkp = mp->shp->stk;
 retry1:
@@ -1676,8 +1676,8 @@ retry2:
 	if(v && (!nulflg || *v ) && c!='+')
 	{
 		register int d = (mode=='@'?' ':mp->ifs);
-		int match[2*(MATCH_MAX+1)], nmatch, nmatch_prev, vsize_last;
-		char *vlast;
+		int match[2*(MATCH_MAX+1)], nmatch, nmatch_prev, vsize_last=0;
+		char *vlast=NULL;
 		while(1)
 		{
 			if(!v)
@@ -1977,7 +1977,7 @@ static void comsubst(Mac_t *mp,register Shnode_t* t, int type)
 		{
 			/* special case $(<file) and $(<#file) */
 			register int fd;
-			int r;
+			int r=0;
 			struct checkpt buff;
 			struct ionod *ip=0;
 			sh_pushcontext(&buff,SH_JMPIO);
@@ -2574,7 +2574,7 @@ static void mac_error(Namval_t *np)
  */ 
 static char *mac_getstring(char *pattern)
 {
-	register char	*cp=pattern, *rep=0, *dp;
+	register char	*cp=pattern, *rep=0, *dp=NULL;
 	register int	c;
 	while(c = *cp++)
 	{

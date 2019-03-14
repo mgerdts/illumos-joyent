@@ -1613,7 +1613,7 @@ static void nested_here(register Lex_t *lp)
 	register int		n,offset;
 	struct argnod		*arg = lp->arg;
 	Stk_t			*stkp = lp->sh->stk;
-	char			*base;
+	char			*base = NULL;
 	if(offset=stktell(stkp))
 		base = stkfreeze(stkp,0);
 	n = fcseek(0)-lp->lexd.docend;

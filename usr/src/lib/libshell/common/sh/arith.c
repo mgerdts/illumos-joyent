@@ -137,7 +137,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 		c = mbchar(str);
 		if(isaletter(c))
 		{
-			register Namval_t *np;
+			register Namval_t *np = NULL;
 			int dot=0;
 			while(1)
 			{

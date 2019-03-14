@@ -213,7 +213,7 @@ int    b_dot_cmd(register int n,char *argv[],void* extra)
 	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
 	struct sh_scoped savst, *prevscope = shp->st.self;
 	char *filename=0;
-	int	fd;
+	int	fd=-1;
 	struct dolnod   *argsave=0, *saveargfor;
 	struct checkpt buff;
 	Sfio_t *iop=0;

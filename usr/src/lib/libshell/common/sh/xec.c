@@ -83,7 +83,7 @@ struct funenv
  */
 static void     l_time(Sfio_t *outfile,register clock_t t,int p)
 {
-	register int  min, sec, frac;
+	register int  min, sec, frac = 0;
 	register int hr;
 	if(p)
 	{
@@ -670,7 +670,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 #endif
 		int		topfd = shp->topfd;
 		char 		*sav=stkptr(stkp,0);
-		char		*cp=0, **com=0, *comn;
+		char		*cp=NULL, **com=NULL, *comn=NULL;
 		int		argn;
 		int 		skipexitset = 0;
 		int		was_interactive = 0;
@@ -914,7 +914,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 					volatile int scope=0, share=0;
 					volatile void *save_ptr;
 					volatile void *save_data;
-					int jmpval, save_prompt;
+					int jmpval, save_prompt=0;
 					int was_nofork = execflg?sh_isstate(SH_NOFORK):0;
 					struct checkpt buff;
 					unsigned long was_vi=0, was_emacs=0, was_gmacs=0;
@@ -1093,7 +1093,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 					struct checkpt buff;
 					Namval_t node;
 					struct Namref	nr;
-					long		mode;
+					long		mode=0;
 					register struct slnod *slp;
 					if(!np->nvalue.ip)
 					{
@@ -1382,8 +1382,8 @@ int sh_exec(register const Shnode_t *t, int flags)
 		     * don't create a new process, just
 		     * save and restore io-streams
 		     */
-			pid_t	pid;
-			int 	jmpval, waitall;
+			pid_t	pid=0;
+			int 	jmpval, waitall=0;
 			int 	simple = (t->fork.forktre->tre.tretyp&COMMSK)==TCOM;
 			struct checkpt buff;
 			if(shp->subshell)
@@ -1716,7 +1716,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 			Shnode_t *tt = t->wh.whtre;
 #if SHOPT_FILESCAN
 			Sfio_t *iop=0;
-			int savein,fd;
+			int savein=0,fd;
 #endif /*SHOPT_FILESCAN*/
 #if SHOPT_OPTIMIZE
 			int  jmpval = ((struct checkpt*)shp->jmplist)->mode;
@@ -2134,7 +2134,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 			else
 			{
 				register int traceon=0;
-				register char *right;
+				register char *right=NULL;
 				register char *trap;
 				char *argv[6];
 				n = type>>TSHIFT;
@@ -2168,7 +2168,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 				}
 				else if(type&TBINARY)
 				{
-					char *op;
+					char *op=NULL;
 					int pattern = 0;
 					if(trap || traceon)
 						op = (char*)(shtab_testops+(n&037)-1)->sh_name;
@@ -2560,8 +2560,8 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	struct argnod		*envlist=0;
 	int			jmpval;
 	volatile int		r = 0;
-	char 			*savstak;
-	struct funenv		*fp;
+	char 			*savstak=NULL;
+	struct funenv		*fp=NULL;
 	struct checkpt		buff;
 	Namval_t		*nspace = shp->namespace;
 	Dt_t			*last_root = shp->last_root;
@@ -2754,10 +2754,10 @@ int sh_fun(Namval_t *np, Namval_t *nq, char *argv[])
 {
 	Shell_t		*shp = &sh;
 	register int offset;
-	register char *base;
+	register char *base=NULL;
 	Namval_t node;
 	struct Namref	nr;
-	long		mode;
+	long		mode=0;
 	char		*prefix = shp->prefix;
 	int n=0;
 	char *av[2];

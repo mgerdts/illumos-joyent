@@ -176,7 +176,7 @@ static Shnode_t *r_tree(Shell_t *shp)
 
 static struct argnod *r_arg(Shell_t *shp)
 {
-	register struct argnod *ap=0, *apold, *aptop=0;
+	register struct argnod *ap=0, *apold=NULL, *aptop=0;
 	register long l;
 	Stk_t		*stkp=shp->stk;
 	while((l=sfgetu(infile))>0)
@@ -228,7 +228,7 @@ static struct argnod *r_arg(Shell_t *shp)
 static struct ionod *r_redirect(Shell_t* shp)
 {
 	register long l;
-	register struct ionod *iop=0, *iopold, *ioptop=0;
+	register struct ionod *iop=0, *iopold=NULL, *ioptop=0;
 	while((l=sfgetl(infile))>=0)
 	{
 		iop = (struct ionod*)getnode(shp->stk,ionod);
@@ -312,7 +312,7 @@ static struct dolnod *r_comlist(Shell_t *shp)
 static struct regnod *r_switch(Shell_t *shp)
 {
 	register long l;
-	struct regnod *reg=0,*regold,*regtop=0;
+	struct regnod *reg=0,*regold=NULL,*regtop=0;
 	while((l=sfgetl(infile))>=0)
 	{
 		reg = (struct regnod*)getnode(shp->stk,regnod);

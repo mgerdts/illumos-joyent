@@ -83,7 +83,7 @@ int sh_lookopt(register const char *sp, int *invert)
 	register const char		*s, *t, *sw, *tw;
 	int				amb;
 	int				hit;
-	int				inv;
+	int				inv=0;
 	int				no;
 	if(sp==0)
 		return(0);

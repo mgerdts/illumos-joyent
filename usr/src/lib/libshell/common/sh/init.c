@@ -1024,7 +1024,7 @@ Shell_t *sh_init(register int argc,register char *argv[], Shinit_f userinit)
 {
 	Shell_t	*shp = &sh;
 	register int n;
-	int type;
+	int type=0;
 	long v;
 	static char *login_files[3];
 	memfatal();
@@ -1663,7 +1663,7 @@ static Dt_t *inittree(Shell_t *shp,const struct shtable2 *name_vals)
 	register const struct shtable2 *tp;
 	register unsigned n = 0;
 	register Dt_t *treep;
-	Dt_t *base_treep, *dict;
+	Dt_t *base_treep, *dict=NULL;
 	for(tp=name_vals;*tp->sh_name;tp++)
 		n++;
 	np = (Namval_t*)calloc(n,sizeof(Namval_t));
