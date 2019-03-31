@@ -22,8 +22,7 @@
 #
 # Copyright 2004 Sun Microsystems, Inc.  All rights reserved.
 # Use is subject to license terms.
-#
-# ident	"%Z%%M%	%I%	%E% SMI"
+# Copyright 2019 Joyent, Inc.
 #
 
 include		../Makefile.com
@@ -31,6 +30,6 @@ include		$(SRC)/lib/Makefile.lib.64
 
 LIBS =		$(DYNLIB1)
 
-include		../../Makefile.targ
+include		../Makefile.targ
 
 install:	all $(ROOT64DYNLIB)

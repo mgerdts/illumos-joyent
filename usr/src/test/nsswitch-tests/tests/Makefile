@@ -10,22 +10,11 @@
 #
 
 #
-# Copyright (c) 2012 by Delphix. All rights reserved.
-# Copyright 2014 Garrett D'Amore <garrett@damore.org>
+# Copyright (c) 2012, 2016 by Delphix. All rights reserved.
 # Copyright 2019 Joyent, Inc.
 #
 
-.PARALLEL: $(SUBDIRS)
+SUBDIRS =		\
+	ldap
 
-SUBDIRS = \
-	crypto-tests \
-	elf-tests \
-	libc-tests \
-	nsswitch-tests \
-	os-tests \
-	smbclient-tests \
-	test-runner \
-	util-tests \
-	zfs-tests
-
-include Makefile.com
+include $(SRC)/test/Makefile.com

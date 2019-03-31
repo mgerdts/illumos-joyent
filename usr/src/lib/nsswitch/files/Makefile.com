@@ -21,6 +21,7 @@
 #
 # Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
 # Use is subject to license terms.
+# Copyright 2019 Joyent, Inc.
 #
 
 LIBRARY =	libnss_files.a
@@ -58,6 +59,9 @@ include ../../../Makefile.rootfs
 CPPFLAGS +=	-I../../../common/inc
 LINTFLAGS +=	-erroff=E_GLOBAL_COULD_BE_STATIC2
 LINTFLAGS64 +=	-erroff=E_GLOBAL_COULD_BE_STATIC2
+
+pics/gethostent.o := CERRWARN += -_gcc=-Wno-switch
+pics/gethostent.o := CERRWARN += -_gcc=-Wno-uninitialized
 
 LDLIBS +=	-lnsl
 DYNLIB1 =	nss_files.so$(VERS)

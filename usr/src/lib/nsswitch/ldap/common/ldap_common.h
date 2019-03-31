@@ -20,6 +20,7 @@
  */
 /*
  * Copyright (c) 1999, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  */
 
 #ifndef	_LDAP_COMMON_H
@@ -70,8 +71,7 @@ extern "C" {
 #define	NSS_STR_PARSE_NO_ADDR	(NSS_STR_PARSE_ERANGE + 100)
 #define	NSS_STR_PARSE_NO_RESULT	(NSS_STR_PARSE_ERANGE + 101)
 
-#define	DOTTEDSUBDOMAIN(string) \
-	((string != NULL) && (strchr(string, '.') != NULL))
+#define	DOTTEDSUBDOMAIN(string) (strchr(string, '.') != NULL)
 #define	SEARCHFILTERLEN		256
 
 #define	_NO_VALUE		""

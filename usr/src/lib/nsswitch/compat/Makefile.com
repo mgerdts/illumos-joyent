@@ -22,8 +22,7 @@
 #
 # Copyright 1993,2001-2003 Sun Microsystems, Inc.  All rights reserved.
 # Use is subject to license terms.
-#
-# ident	"%Z%%M%	%I%	%E% SMI"
+# Copyright 2019 Joyent, Inc.
 #
 # lib/nsswitch/compat/Makefile.com
 
@@ -36,6 +35,8 @@ OBJECTS =	getpwent.o	\
 		compat_common.o	\
 		getuserattr.o	\
 		getauuser.o
+
+pics/compat_common.o	:= CERRWARN += -_gcc=-Wno-uninitialized
 
 # include common nsswitch library definitions.
 include		../../Makefile.com

@@ -21,6 +21,7 @@
 #
 # Copyright 2008 Sun Microsystems, Inc.  All rights reserved.
 # Use is subject to license terms.
+# Copyright 2019 Joyent, Inc.
 #
 
 LIBRARY =	libnss_ldap.a
@@ -50,13 +51,16 @@ OBJECTS =	getauthattr.o	\
 		tsol_getrhent.o	\
 		tsol_gettpent.o	\
 		ldap_common.o	\
-		ldap_utils.o
+		ldap_utils.o	\
+		list.o
+
+USDT_PROVIDERS	= provider.d
 
 # include common nsswitch library definitions.
 include		../../Makefile.com
 
 CPPFLAGS +=	-I../../../libsldap/common
-LDLIBS +=	-lsldap -lnsl -lldap
+LDLIBS +=	-lsldap -lnsl -lldap -lavl -lscf
 LINTFLAGS +=	-erroff=E_GLOBAL_COULD_BE_STATIC2
 LINTFLAGS64 +=	-erroff=E_GLOBAL_COULD_BE_STATIC2
 DYNLIB1 =	nss_ldap.so$(VERS)

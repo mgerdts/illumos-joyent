@@ -23,6 +23,7 @@
  * Use is subject to license terms.
  *
  * Copyright 2017 Nexenta Systems, Inc.  All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  */
 
 #include <grp.h>
@@ -161,7 +162,7 @@ _nss_ldap_group2str(ldap_backend_ptr be, nss_XbyY_args_t *argp)
 		 * If we find an '=' in the member attribute value, treat it as
 		 * a DN, otherwise as a username.
 		 */
-		if (member_str = strchr(members->attrvalue[i], '=')) {
+		if ((member_str = strchr(members->attrvalue[i], '=')) != NULL) {
 			member_str++; /* skip over the '=' */
 			/* Fail if we can't pull a username out of the RDN */
 			if (! (member_str = strtok_r(member_str,
@@ -367,7 +368,8 @@ getbymember(ldap_backend_ptr be, void *a)
 			 * value, treat it as a DN, otherwise as a
 			 * username.
 			 */
-			if (member_str = strchr(membervalue[j], '=')) {
+			if ((member_str = strchr(membervalue[j], '=')) !=
+			    NULL) {
 				member_str++; /* skip over the '=' */
 				member_str = strtok_r(member_str, ",",
 				    &strtok_state);

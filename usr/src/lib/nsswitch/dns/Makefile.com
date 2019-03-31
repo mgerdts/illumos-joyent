@@ -21,6 +21,7 @@
 #
 # Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
 # Use is subject to license terms.
+# Copyright 2019 Joyent, Inc.
 #
 # lib/nsswitch/dns/Makefile.com
 
@@ -43,6 +44,9 @@ include ../../../Makefile.rootfs
 CPPFLAGS +=	-DNSS_DNS_LIBRESOLV=\"libresolv.so.2\"
 
 LINTFLAGS +=	-erroff=E_GLOBAL_COULD_BE_STATIC2
+
+pics/dns_common.o	:= CERRWARN += -_gcc=-Wno-uninitialized
+pics/gethostent6.o	:= CERRWARN += -_gcc=-Wno-uninitialized
 
 LDLIBS +=	-lnsl -lresolv_joy -lsocket
 DYNLIB1 =	nss_dns.so$(VERS)

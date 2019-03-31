@@ -21,15 +21,14 @@
 #
 # Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
 # Use is subject to license terms.
-#
-# ident	"%Z%%M%	%I%	%E% SMI"
+# Copyright 2019 Joyent, Inc.
 #
 
 all:		$(LIBS)
 
 # include global library targets.
 include		$(SRC)/lib/Makefile.targ
-
+include		$(SRC)/lib/Makefile.usdt
 
 $(ROOT32DYNLIB) := FILEMODE= 755
 $(ROOT64DYNLIB) := FILEMODE= 755
@@ -39,7 +38,7 @@ $(DYNLIB1) :=	CTFMERGE_POST = $(CTFMERGE_LIB)
 # DYNLIB1 is used rather than DYNLIB to prevent the automagic expansion and
 # creation of a libXXXX.so$(VERS) target.
 
-$(DYNLIB1):	pics .WAIT $$(PICS)
+$(DYNLIB1):	pics .WAIT $$(PICS) .WAIT $(USDT_PICS)
 		$(BUILD.SO)
 		$(POST_PROCESS_SO)
 

@@ -21,6 +21,7 @@
 /*
  * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
+ * Copyright 2019 Joyent, Inc.
  */
 
 #include <shadow.h>
@@ -77,8 +78,10 @@ _nss_ldap_shadow2str(ldap_backend_ptr be, nss_XbyY_args_t *argp)
 	ns_ldap_result_t	*result = be->result;
 	char		**uid, **passwd, **last, **smin, **smax;
 	char		**warning, **inactive, **expire, **flag;
-	char		*last_str, *min_str, *max_str, *warning_str;
-	char		*inactive_str, *expire_str, *flag_str;
+	char		*last_str = _NO_VALUE, *min_str = _NO_VALUE;
+	char		*max_str = _NO_VALUE, *warning_str = _NO_VALUE;
+	char		*inactive_str = _NO_VALUE, *expire_str = _NO_VALUE;
+	char		*flag_str = _NO_VALUE;
 
 	if (result == NULL)
 		return (NSS_STR_PARSE_PARSE);

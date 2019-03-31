@@ -21,6 +21,7 @@
 #
 # Copyright 2006 Sun Microsystems, Inc.  All rights reserved.
 # Use is subject to license terms.
+# Copyright 2019 Joyent, Inc.
 #
 
 LIBRARY =	libnss_nis.a
@@ -56,6 +57,10 @@ include ../../../Makefile.rootfs
 
 LINTFLAGS +=	-erroff=E_GLOBAL_COULD_BE_STATIC2
 LINTFLAGS64 +=	-erroff=E_GLOBAL_COULD_BE_STATIC2
+
+pics/getgrent.o		:= CERRWARN += -_gcc=-Wno-switch
+pics/getnetgrent.o	:= CERRWARN += -_gcc=-Wno-parentheses
+pics/nis_common.o	:= CERRWARN += -_gcc=-Wno-uninitialized
 
 LDLIBS +=	-lnsl
 DYNLIB1 =	nss_nis.so$(VERS)

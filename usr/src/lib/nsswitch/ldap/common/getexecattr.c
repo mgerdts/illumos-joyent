@@ -21,6 +21,7 @@
 /*
  * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
+ * Copyright 2019 Joyent, Inc.
  */
 
 #include <secdb.h>
@@ -421,7 +422,7 @@ get_wild(ldap_backend_ptr be, nss_XbyY_args_t *argp, int getby_flag)
 	const char	*type = _priv_exec->type;
 
 	if (strpbrk(policy, "*()\\") != NULL ||
-	    type != NULL && strpbrk(type, "*()\\") != NULL)
+	    (type != NULL && strpbrk(type, "*()\\") != NULL))
 		return ((nss_status_t)NSS_NOTFOUND);
 
 	if (_priv_exec->id != NULL)
@@ -545,7 +546,7 @@ getbynam(ldap_backend_ptr be, void *a)
 	const char	*type = _priv_exec->type;
 
 	if (strpbrk(policy, "*()\\") != NULL ||
-	    type != NULL && strpbrk(type, "*()\\") != NULL ||
+	    (type != NULL && strpbrk(type, "*()\\") != NULL) ||
 	    _ldap_filter_name(name, _priv_exec->name, sizeof (name)) != 0)
 		return ((nss_status_t)NSS_NOTFOUND);
 	ret = snprintf(searchfilter, sizeof (searchfilter),

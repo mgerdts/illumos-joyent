@@ -19,11 +19,9 @@
 #
 # CDDL HEADER END
 #
-#
-#ident	"%Z%%M%	%I%	%E% SMI"
-#
 # Copyright (c) 1999 by Sun Microsystems, Inc.
 # All rights reserved.
+# Copyright 2019 Joyent, Inc.
 #
 # lib/nsswitch/ldap/Makefile
 #

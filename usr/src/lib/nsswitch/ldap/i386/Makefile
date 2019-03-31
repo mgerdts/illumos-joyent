@@ -19,11 +19,9 @@
 #
 # CDDL HEADER END
 #
-#
-#ident	"%Z%%M%	%I%	%E% SMI"
-#
 # Copyright (c) 1999,2001 by Sun Microsystems, Inc.
 # All rights reserved.
+# Copyright 2019 Joyent, Inc.
 #
 # lib/nsswitch/ldap/i386/Makefile
 
@@ -31,6 +29,6 @@ include		../Makefile.com
 
 LIBS =		$(DYNLIB1)
 
-include		../../Makefile.targ
+include		../Makefile.targ
 
 install:	all $(ROOTLIBS)
