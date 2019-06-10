@@ -22,7 +22,7 @@
 /*
  * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2012, 2017 by Delphix. All rights reserved.
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  * Copyright (c) 2014 Integros [integros.com]
  */
 
@@ -1814,6 +1814,7 @@ vdev_raidz_physio(vdev_t *vd, caddr_t data, size_t size,
 	rm = vdev_raidz_map_alloc(abd,
 	    SPA_OLD_MAXBLOCKSIZE, origoffset, tvd->vdev_ashift,
 	    vd->vdev_children, vd->vdev_nparity);
+	/* XXX-mg implement for dump? */
 
 	coloffset = origoffset;
 
@@ -2342,6 +2343,8 @@ vdev_raidz_io_done(zio_t *zio)
 
 	ASSERT(rm->rm_missingparity <= rm->rm_firstdatacol);
 	ASSERT(rm->rm_missingdata <= rm->rm_cols - rm->rm_firstdatacol);
+
+	zio->zio_nskip = rm->rm_nskip;
 
 	for (c = 0; c < rm->rm_cols; c++) {
 		rc = &rm->rm_col[c];

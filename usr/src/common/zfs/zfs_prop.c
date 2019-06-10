@@ -23,7 +23,7 @@
  * Copyright (c) 2011, 2016 by Delphix. All rights reserved.
  * Copyright (c) 2013 by Saso Kiselkov. All rights reserved.
  * Copyright (c) 2014 Integros [integros.com]
- * Copyright 2016, Joyent, Inc.
+ * Copyright 2019 Joyent, Inc.
  */
 
 /* Portions Copyright 2010 Robert Milkowski */
@@ -410,6 +410,8 @@ zfs_prop_init(void)
 	    ZFS_TYPE_DATASET | ZFS_TYPE_BOOKMARK, "<uint64>", "GUID");
 	zprop_register_number(ZFS_PROP_CREATETXG, "createtxg", 0, PROP_READONLY,
 	    ZFS_TYPE_DATASET | ZFS_TYPE_BOOKMARK, "<uint64>", "CREATETXG");
+	zprop_register_number(ZFS_PROP_SKIPREFERENCED, "skipreferenced", 0,
+	    PROP_READONLY, ZFS_TYPE_DATASET, "<size>", "SKIPREFER");
 
 	/* default number properties */
 	zprop_register_number(ZFS_PROP_QUOTA, "quota", 0, PROP_DEFAULT,

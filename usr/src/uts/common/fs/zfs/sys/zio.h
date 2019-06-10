@@ -24,7 +24,7 @@
  * Copyright 2011 Nexenta Systems, Inc.  All rights reserved.
  * Copyright (c) 2012, 2018 by Delphix. All rights reserved.
  * Copyright (c) 2013 by Saso Kiselkov. All rights reserved.
- * Copyright (c) 2019, Joyent, Inc. All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  * Copyright 2016 Toomas Soome <tsoome@me.com>
  */
 
@@ -435,6 +435,7 @@ struct zio {
 	uint64_t	io_orig_size;
 	/* io_lsize != io_orig_size iff this is a raw write */
 	uint64_t	io_lsize;
+	uint64_t	io_nskip;
 
 	/* Stuff for the vdev stack */
 	vdev_t		*io_vd;

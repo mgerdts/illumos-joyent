@@ -22,7 +22,7 @@
 /*
  * Copyright (c) 2011, 2018 by Delphix. All rights reserved.
  * Copyright (c) 2013 by Saso Kiselkov. All rights reserved.
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  * Copyright (c) 2014, Nexenta Systems, Inc. All rights reserved.
  * Copyright (c) 2014 Integros [integros.com]
  * Copyright (c) 2017, Intel Corporation.
@@ -321,4 +321,8 @@ zpool_feature_init(void)
 	    "Support for separate allocation classes.",
 	    ZFEATURE_FLAG_READONLY_COMPAT, NULL);
 	}
+	zfeature_register(SPA_FEATURE_SKIPREFERENCED,
+	    "com.joyent:skiprefeferenced" "skipreferenced",
+	    "Per-dataset accounting of raidz skip blocks.",
+	    ZFEATURE_FLAG_READONLY_COMPAT, NULL);
 }

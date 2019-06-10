@@ -170,15 +170,15 @@ typedef struct zio_cksum_salt {
  *
  *	64	56	48	40	32	24	16	8	0
  *	+-------+-------+-------+-------+-------+-------+-------+-------+
- * 0	|  pad  |	  vdev1         | GRID  |	  ASIZE		|
+ * 0	|pad |sb|	  vdev1         | GRID  |	  ASIZE		|
  *	+-------+-------+-------+-------+-------+-------+-------+-------+
  * 1	|G|			 offset1				|
  *	+-------+-------+-------+-------+-------+-------+-------+-------+
- * 2	|  pad  |	  vdev2         | GRID  |	  ASIZE		|
+ * 2	|pad |sb|	  vdev2         | GRID  |	  ASIZE		|
  *	+-------+-------+-------+-------+-------+-------+-------+-------+
  * 3	|G|			 offset2				|
  *	+-------+-------+-------+-------+-------+-------+-------+-------+
- * 4	|  pad  |	  vdev3         | GRID  |	  ASIZE		|
+ * 4	|pad |sb|	  vdev3         | GRID  |	  ASIZE		|
  *	+-------+-------+-------+-------+-------+-------+-------+-------+
  * 5	|G|			 offset3				|
  *	+-------+-------+-------+-------+-------+-------+-------+-------+
@@ -205,6 +205,7 @@ typedef struct zio_cksum_salt {
  *
  * Legend:
  *
+ * sb		skip blocks (SPA_FEATURE_SKIPREFERENCED)
  * vdev		virtual device ID
  * offset	offset into virtual device
  * LSIZE	logical size
@@ -348,6 +349,9 @@ typedef struct blkptr {
 /*
  * Macros to get and set fields in a bp or DVA.
  */
+#define	DVA_GET_NSKIP(dva)	BF64_GET((dva)->dva_word[0], 56, 2)
+#define	DVA_SET_NSKIP(dva, x)	BF64_SET((dva)->dva_word[0], 56, 2, x)
+
 #define	DVA_GET_ASIZE(dva)	\
 	BF64_GET_SB((dva)->dva_word[0], 0, SPA_ASIZEBITS, SPA_MINBLOCKSHIFT, 0)
 #define	DVA_SET_ASIZE(dva, x)	\
@@ -440,6 +444,12 @@ _NOTE(CONSTCOND) } while (0)
 
 #define	BP_GET_UCSIZE(bp)	\
 	(BP_IS_METADATA(bp) ? BP_GET_PSIZE(bp) : BP_GET_LSIZE(bp))
+
+#define	BP_GET_SSIZE(bp)	\
+	(BP_IS_EMBEDDED(bp) ? 0 : \
+	DVA_GET_SSIZE(&(bp)->blk_dva[0]) + \
+	DVA_GET_SSIZE(&(bp)->blk_dva[1]) + \
+	DVA_GET_SSIZE(&(bp)->blk_dva[2]))
 
 #define	BP_GET_NDVAS(bp)	\
 	(BP_IS_EMBEDDED(bp) ? 0 : \
@@ -847,6 +857,7 @@ extern boolean_t spa_has_spare(spa_t *, uint64_t guid);
 extern uint64_t dva_get_dsize_sync(spa_t *spa, const dva_t *dva);
 extern uint64_t bp_get_dsize_sync(spa_t *spa, const blkptr_t *bp);
 extern uint64_t bp_get_dsize(spa_t *spa, const blkptr_t *bp);
+extern uint64_t bp_get_ssize_sync(spa_t *spa, const blkptr_t *bp);
 extern boolean_t spa_has_slogs(spa_t *spa);
 extern boolean_t spa_is_root(spa_t *spa);
 extern boolean_t spa_writeable(spa_t *spa);

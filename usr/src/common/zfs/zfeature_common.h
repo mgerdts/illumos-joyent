@@ -22,7 +22,7 @@
 /*
  * Copyright (c) 2011, 2017 by Delphix. All rights reserved.
  * Copyright (c) 2013 by Saso Kiselkov. All rights reserved.
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  * Copyright (c) 2014 Integros [integros.com]
  * Copyright (c) 2017, Intel Corporation.
  */
@@ -63,6 +63,7 @@ typedef enum spa_feature {
 	SPA_FEATURE_POOL_CHECKPOINT,
 	SPA_FEATURE_SPACEMAP_V2,
 	SPA_FEATURE_ALLOCATION_CLASSES,
+	SPA_FEATURE_SKIPREFERENCED,
 	SPA_FEATURES
 } spa_feature_t;
 

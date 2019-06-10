@@ -1996,6 +1996,21 @@ bp_get_dsize(spa_t *spa, const blkptr_t *bp)
 }
 
 uint64_t
+bp_get_ssize_sync(spa_t *spa, const blkptr_t *bp)
+{
+	uint64_t ssize = 0;
+
+	ASSERT(spa_config_held(spa, SCL_ALL, RW_READER) != 0);
+
+	for (int d = 0; d < BP_GET_NDVAS(bp); d++) {
+		vdev_t *vd = vdev_lookup_top(spa, DVA_GET_VDEV(dva));
+		ssize += DVA_GET_NSKIP(&bp->blk_dva[d]) << vd->vdev_ashift;
+	}
+
+	return (ssize);
+}
+
+uint64_t
 spa_dirty_data(spa_t *spa)
 {
 	return (spa->spa_dsl_pool->dp_dirty_total);

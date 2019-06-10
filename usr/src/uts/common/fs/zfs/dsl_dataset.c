@@ -22,7 +22,7 @@
 /*
  * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2011, 2017 by Delphix. All rights reserved.
- * Copyright (c) 2014, Joyent, Inc. All rights reserved.
+ * Copyright (c) 2019 Joyent, Inc.
  * Copyright (c) 2014 RackTop Systems.
  * Copyright (c) 2014 Spectra Logic Corporation, All rights reserved.
  * Copyright (c) 2014 Integros [integros.com]
@@ -117,9 +117,11 @@ parent_delta(dsl_dataset_t *ds, int64_t delta)
 void
 dsl_dataset_block_born(dsl_dataset_t *ds, const blkptr_t *bp, dmu_tx_t *tx)
 {
-	int used = bp_get_dsize_sync(tx->tx_pool->dp_spa, bp);
+	spa_t *spa = tx->tx_pool->dp_spa;
+	int used = bp_get_dsize_sync(spa, bp);
 	int compressed = BP_GET_PSIZE(bp);
 	int uncompressed = BP_GET_UCSIZE(bp);
+	uint64_t skip = ds_get_ssize_sync(spa, bp);
 	int64_t delta;
 
 	dprintf_bp(bp, "ds=%p", ds);
@@ -144,6 +146,11 @@ dsl_dataset_block_born(dsl_dataset_t *ds, const blkptr_t *bp, dmu_tx_t *tx)
 	dsl_dataset_phys(ds)->ds_compressed_bytes += compressed;
 	dsl_dataset_phys(ds)->ds_uncompressed_bytes += uncompressed;
 	dsl_dataset_phys(ds)->ds_unique_bytes += used;
+
+	if (skip != 0 &&
+	    spa_feature_is_enabled(spa, SPA_FEATURE_SKIPREFERENCED)) {
+		dsl_dataset_phys(ds)->ds_skipref_bytes += skip;
+	}
 
 	if (BP_GET_LSIZE(bp) > SPA_OLD_MAXBLOCKSIZE) {
 		ds->ds_feature_activation_needed[SPA_FEATURE_LARGE_BLOCKS] =
@@ -211,6 +218,7 @@ dsl_dataset_block_kill(dsl_dataset_t *ds, const blkptr_t *bp, dmu_tx_t *tx,
 	int used = bp_get_dsize_sync(spa, bp);
 	int compressed = BP_GET_PSIZE(bp);
 	int uncompressed = BP_GET_UCSIZE(bp);
+	uint64_t skip = ds_get_ssize_sync(spa, bp);
 
 	if (BP_IS_HOLE(bp))
 		return (0);
@@ -284,6 +292,13 @@ dsl_dataset_block_kill(dsl_dataset_t *ds, const blkptr_t *bp, dmu_tx_t *tx,
 	ASSERT3U(dsl_dataset_phys(ds)->ds_uncompressed_bytes, >=, uncompressed);
 	dsl_dataset_phys(ds)->ds_uncompressed_bytes -= uncompressed;
 	mutex_exit(&ds->ds_lock);
+
+	if (skip != 0 &&
+	    spa_feature_is_enabled(spa, SPA_FEATURE_SKIPREFERENCED)) {
+		ASSERT3U(dsl_dataset_phys(ds)->ds_skipref_bytes, >=, skip);
+		dsl_dataset_phys(ds)->ds_skipref_bytes -= skip;
+	}
+
 
 	return (used);
 }

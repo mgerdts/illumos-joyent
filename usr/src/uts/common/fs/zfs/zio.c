@@ -1299,6 +1299,7 @@ zio_write_compress(zio_t *zio)
 	blkptr_t *bp = zio->io_bp;
 	uint64_t lsize = zio->io_lsize;
 	uint64_t psize = zio->io_size;
+	uint64_t nskip = zio->io_nskip;
 	int pass = 1;
 
 	EQUIV(lsize != psize, (zio->io_flags & ZIO_FLAG_RAW) != 0);

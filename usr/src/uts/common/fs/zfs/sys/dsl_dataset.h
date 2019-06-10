@@ -21,7 +21,7 @@
 /*
  * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2011, 2017 by Delphix. All rights reserved.
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  * Copyright (c) 2013 Steven Hartland. All rights reserved.
  * Copyright (c) 2014 Spectra Logic Corporation, All rights reserved.
  * Copyright (c) 2014 Integros [integros.com]
@@ -131,9 +131,9 @@ typedef struct dsl_dataset_phys {
 	uint64_t ds_creation_txg;
 	uint64_t ds_deadlist_obj;	/* DMU_OT_DEADLIST */
 	/*
-	 * ds_referenced_bytes, ds_compressed_bytes, and ds_uncompressed_bytes
-	 * include all blocks referenced by this dataset, including those
-	 * shared with any other datasets.
+	 * ds_referenced_bytes, ds_compressed_bytes, ds_uncompressed_bytes, and
+	 * ds_skipreferenced_bytes include all blocks referenced by this
+	 * dataset, including those shared with any other datasets.
 	 */
 	uint64_t ds_referenced_bytes;
 	uint64_t ds_compressed_bytes;
@@ -151,7 +151,9 @@ typedef struct dsl_dataset_phys {
 	uint64_t ds_next_clones_obj;	/* DMU_OT_DSL_CLONES */
 	uint64_t ds_props_obj;		/* DMU_OT_DSL_PROPS for snaps */
 	uint64_t ds_userrefs_obj;	/* DMU_OT_USERREFS */
-	uint64_t ds_pad[5]; /* pad out to 320 bytes for good measure */
+	/* XXX-mg Should this be in a userprop instead? */
+	uint64_t ds_skipref_bytes;	/* SPA_FEATURE_SKIPREFERENCED */
+	uint64_t ds_pad[4]; /* pad out to 320 bytes for good measure */
 } dsl_dataset_phys_t;
 
 typedef struct dsl_dataset {
