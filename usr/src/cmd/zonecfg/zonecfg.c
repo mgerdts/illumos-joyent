@@ -23,7 +23,7 @@
  * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
  * Copyright 2014 Nexenta Systems, Inc.  All rights reserved.
  * Copyright 2014 Gary Mills
- * Copyright 2016, Joyent Inc.
+ * Copyright 2019 Joyent Inc.
  */
 
 /*
@@ -129,7 +129,7 @@ extern int lex_lineno;
 #define	SHELP_REMOVE	"remove [-F] <resource-type> " \
 	"[ <property-name>=<property-value> ]*\n" \
 	"\t(global scope)\n" \
-	"remove [-F] <property-name> <property-value>\n" \
+	"remove [-F] <property-name> [<property-value>]\n" \
 	"\t(resource scope)"
 #define	SHELP_REVERT	"revert [-F]"
 #define	SHELP_SELECT	"select <resource-type> { <property-name>=" \
@@ -3864,16 +3864,16 @@ remove_property(cmd_t *cmd)
 		return;
 	}
 
-	if (cmd->cmd_prop_nv_pairs != 1) {
-		long_usage(CMD_ADD, B_TRUE);
-		return;
-	}
-
 	if (initialize(B_TRUE) != Z_OK)
 		return;
 
 	switch (res_type) {
 	case RT_FS:
+		if (cmd->cmd_prop_nv_pairs != 1) {
+			long_usage(CMD_REMOVE, B_TRUE);
+			return;
+		}
+
 		if (prop_type != PT_OPTIONS) {
 			zone_perror(pt_to_str(prop_type), Z_NO_PROPERTY_TYPE,
 			    B_TRUE);
@@ -3891,7 +3891,7 @@ remove_property(cmd_t *cmd)
 		}
 		if (pp->pv_type == PROP_VAL_SIMPLE) {
 			if (pp->pv_simple == NULL) {
-				long_usage(CMD_ADD, B_TRUE);
+				long_usage(CMD_REMOVE, B_TRUE);
 				return;
 			}
 			prop_id = pp->pv_simple;
@@ -3917,6 +3917,11 @@ remove_property(cmd_t *cmd)
 		return;
 	case RT_NET:		/* FALLTHRU */
 	case RT_DEVICE:
+		if (cmd->cmd_prop_nv_pairs > 1) {
+			long_usage(CMD_REMOVE, B_TRUE);
+			return;
+		}
+
 		if (prop_type != PT_NPROP) {
 			zone_perror(pt_to_str(prop_type), Z_NO_PROPERTY_TYPE,
 			    B_TRUE);
@@ -3924,6 +3929,17 @@ remove_property(cmd_t *cmd)
 			usage(B_FALSE, HELP_PROPS);
 			return;
 		}
+
+		if (cmd->cmd_prop_nv_pairs == 0) {
+			err = zonecfg_remove_all_res_attrs(res_type == RT_NET ?
+			    &in_progress_nwiftab.zone_nwif_attrp :
+			    &in_progress_devtab.zone_dev_attrp);
+			if (err != Z_OK && !force) {
+				zone_perror(pt_to_str(prop_type), err, B_TRUE);
+			}
+			return;
+		}
+
 		pp = cmd->cmd_property_ptr[0];
 		if (pp->pv_type != PROP_VAL_COMPLEX) {
 			zerr(gettext("A %s value was expected here."),
@@ -3966,6 +3982,11 @@ remove_property(cmd_t *cmd)
 			zone_perror(pt_to_str(prop_type), err, B_TRUE);
 		return;
 	case RT_RCTL:
+		if (cmd->cmd_prop_nv_pairs != 1) {
+			long_usage(CMD_REMOVE, B_TRUE);
+			return;
+		}
+
 		if (prop_type != PT_VALUE) {
 			zone_perror(pt_to_str(prop_type), Z_NO_PROPERTY_TYPE,
 			    B_TRUE);
@@ -4004,7 +4025,7 @@ remove_property(cmd_t *cmd)
 			default:
 				zone_perror(pt_to_str(prop_type),
 				    Z_NO_PROPERTY_TYPE, B_TRUE);
-				long_usage(CMD_ADD, B_TRUE);
+				long_usage(CMD_REMOVE, B_TRUE);
 				usage(B_FALSE, HELP_PROPS);
 				zonecfg_free_rctl_value_list(rctlvaltab);
 				return;

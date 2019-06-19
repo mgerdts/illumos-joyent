@@ -21,7 +21,7 @@
 
 /*
  * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
- * Copyright 2015, Joyent, Inc.
+ * Copyright 2019 Joyent, Inc.
  */
 
 #ifndef _LIBZONECFG_H
@@ -380,6 +380,7 @@ extern	int	zonecfg_add_res_attr(struct zone_res_attrtab **,
 extern	void	zonecfg_free_res_attr_list(struct zone_res_attrtab *);
 extern	int	zonecfg_remove_res_attr(struct zone_res_attrtab **,
     struct zone_res_attrtab *);
+extern	int	zonecfg_remove_all_res_attrs(struct zone_res_attrtab **);
 
 /*
  * Network interface configuration.

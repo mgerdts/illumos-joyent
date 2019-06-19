@@ -745,6 +745,24 @@ remove_command: REMOVE
 		$$->cmd_argv[0] = claim_token($2);
 		$$->cmd_argv[1] = NULL;
 	}
+	| REMOVE property_name
+	{
+		if (($$ = alloc_cmd()) == NULL)
+			YYERROR;
+		cmd = $$;
+		$$->cmd_handler = &remove_func;
+		$$->cmd_prop_nv_pairs = 0;
+		$$->cmd_prop_name[0] = $2;
+	}
+	| REMOVE TOKEN property_name
+	{
+		if (($$ = alloc_cmd()) == NULL)
+			YYERROR;
+		cmd = $$;
+		$$->cmd_handler = &remove_func;
+		$$->cmd_prop_nv_pairs = 0;
+		$$->cmd_prop_name[0] = $3;
+	}
 	| REMOVE property_name property_value
 	{
 		if (($$ = alloc_cmd()) == NULL)

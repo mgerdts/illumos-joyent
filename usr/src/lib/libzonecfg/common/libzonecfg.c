@@ -2562,6 +2562,20 @@ zonecfg_remove_res_attr(struct zone_res_attrtab **headptr,
 	return (Z_NO_PROPERTY_ID);
 }
 
+int
+zonecfg_remove_all_res_attrs(struct zone_res_attrtab **headptr)
+{
+	struct zone_res_attrtab *this, *next;
+
+	for (this = *headptr; this != NULL; this = next) {
+		next = this->zone_res_attr_next;
+		free(this);
+	}
+
+	*headptr = NULL;
+	return (Z_OK);
+}
+
 /*
  * Must be a comma-separated list of alpha-numeric file system names.
  */
