@@ -1827,7 +1827,7 @@ zfs_mount(vfs_t *vfsp, vnode_t *mvp, struct mounta *uap, cred_t *cr)
 	mutex_enter(&mvp->v_lock);
 	if ((uap->flags & MS_REMOUNT) == 0 &&
 	    (uap->flags & MS_OVERLAY) == 0 &&
-	    (mvp->v_count != 1 || (mvp->v_flag & VROOT))) {
+	    (fem_get_vnrefs(mvp) != 1 || (mvp->v_flag & VROOT))) {
 		mutex_exit(&mvp->v_lock);
 		return (SET_ERROR(EBUSY));
 	}

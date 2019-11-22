@@ -24,7 +24,7 @@
  */
 
 /*
- * Copyright (c) 2015, Joyent, Inc.  All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  */
 
 #include <sys/types.h>
@@ -3977,6 +3977,35 @@ fem_getvnops(vnode_t *v)
 	return (r);
 }
 
+/*
+ * Returns the number of vnode refs that are not associated with fem.
+ */
+int
+fem_get_vnrefs(vnode_t *v)
+{
+	int val;
+	struct fem_list *fl;
+
+	ASSERT(MUTEX_HELD(&v->v_lock));
+	if (v->v_femhead == NULL) {
+		return (v->v_count);
+	}
+
+	if ((fl = fem_lock(v->v_femhead)) == NULL) {
+		val = v->v_count;
+	} else {
+		ASSERT3S(fl->feml_tos, >, 0);
+		ASSERT3S(fl->feml_tos, <=, v->v_count);
+		/*
+		 * The first item on the list is a guard entry that does not
+		 * have a vnode ref.
+		 */
+		val = fl->feml_tos - v->v_count + 1;
+	}
+	fem_unlock(v->v_femhead);
+
+	return (val);
+}
 
 /*
  * VFS interposition

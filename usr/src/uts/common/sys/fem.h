@@ -23,6 +23,7 @@
  * Use is subject to license terms.
  *
  * Copyright 2013 Nexenta Systems, Inc.  All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  */
 
 #ifndef _SYS_FEM_H
@@ -427,7 +428,7 @@ extern int fem_is_installed(struct vnode *v, fem_t *mon, void *arg);
 extern int fem_uninstall(struct vnode *v, fem_t *mon, void *arg);
 extern vnodeops_t *fem_getvnops(struct vnode *v);
 extern void fem_setvnops(struct vnode *v, struct vnodeops *nops);
-
+extern int fem_get_vnrefs(vnode_t *);
 
 extern int fsem_create(char *name, const struct fs_operation_def *templ,
 			fsem_t **actual);
