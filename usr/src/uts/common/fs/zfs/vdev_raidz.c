@@ -22,16 +22,14 @@
 /*
  * Copyright (c) 2005, 2010, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2012, 2019 by Delphix. All rights reserved.
- * Copyright (c) 2013, Joyent, Inc. All rights reserved.
+ * Copyright 2019 Joyent, Inc.
  * Copyright (c) 2014 Integros [integros.com]
  */
 
 #include <sys/zfs_context.h>
 #include <sys/spa.h>
 #include <sys/vdev_impl.h>
-#include <sys/vdev_disk.h>
 #include <sys/vdev_file.h>
-#include <sys/vdev_raidz.h>
 #include <sys/zio.h>
 #include <sys/zio_checksum.h>
 #include <sys/abd.h>
@@ -1791,7 +1789,7 @@ vdev_raidz_close(vdev_t *vd)
  *                                                      |
  *                                               32 KB data block
  */
-int
+static int
 vdev_raidz_physio(vdev_t *vd, caddr_t data, size_t size,
     uint64_t offset, uint64_t origoffset, boolean_t doread, boolean_t isdump)
 {
@@ -1803,8 +1801,6 @@ vdev_raidz_physio(vdev_t *vd, caddr_t data, size_t size,
 
 	uint64_t start, end, colstart, colend;
 	uint64_t coloffset, colsize, colskip;
-
-	int flags = doread ? B_READ : B_WRITE;
 
 #ifdef	_KERNEL
 
@@ -1865,10 +1861,10 @@ vdev_raidz_physio(vdev_t *vd, caddr_t data, size_t size,
 		 * VDEV_LABEL_OFFSET().  See zio_vdev_child_io() for another
 		 * example of why this calculation is needed.
 		 */
-		if ((err = vdev_disk_physio(cvd,
+		if ((err = cvd->vdev_ops->vdev_op_physio(cvd,
 		    ((char *)abd_to_buf(rc->rc_abd)) + colskip, colsize,
-		    VDEV_LABEL_OFFSET(rc->rc_offset) + colskip,
-		    flags, isdump)) != 0)
+		    VDEV_LABEL_OFFSET(rc->rc_offset) + colskip, 0,
+		    doread, isdump)) != 0)
 			break;
 	}
 
