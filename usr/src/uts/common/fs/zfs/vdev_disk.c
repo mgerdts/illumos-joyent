@@ -127,12 +127,13 @@ vdev_disk_free(vdev_t *vd)
 	vd->vdev_tsd = NULL;
 }
 
-/* ARGSUSED */
 static int
 vdev_disk_off_notify(ldi_handle_t lh, ldi_ev_cookie_t ecookie, void *arg,
     void *ev_data)
 {
+	_NOTE(ARGUNUSED(lh, dev_data));
 	vdev_t *vd = (vdev_t *)arg;
+	spa_t *spa = vd->vdev_spa;
 	vdev_disk_t *dvd = vd->vdev_tsd;
 
 	/*
@@ -142,19 +143,15 @@ vdev_disk_off_notify(ldi_handle_t lh, ldi_ev_cookie_t ecookie, void *arg,
 		return (LDI_EV_SUCCESS);
 
 	/*
-	 * All LDI handles must be closed for the state change to succeed, so
-	 * call on vdev_disk_close() to do this.
-	 *
-	 * We inform vdev_disk_close that it is being called from offline
-	 * notify context so it will defer cleanup of LDI event callbacks and
-	 * freeing of vd->vdev_tsd to the offline finalize or a reopen.
+	 * Tell any new threads that stumble upon this vdev that they should not
+	 * try to do I/O.
 	 */
 	dvd->vd_ldi_offline = B_TRUE;
-	vdev_disk_close(vd);
 
 	/*
-	 * Now that the device is closed, request that the spa_async_thread
-	 * mark the device as REMOVED and notify FMA of the removal.
+	 * Request that the spa_async_thread mark the device as REMOVED and
+	 * notify FMA of the removal.  This should also trigger a vdev_close()
+	 * in the async thread.
 	 */
 	zfs_post_remove(vd->vdev_spa, vd);
 	vd->vdev_remove_wanted = B_TRUE;
@@ -163,11 +160,11 @@ vdev_disk_off_notify(ldi_handle_t lh, ldi_ev_cookie_t ecookie, void *arg,
 	return (LDI_EV_SUCCESS);
 }
 
-/* ARGSUSED */
 static void
 vdev_disk_off_finalize(ldi_handle_t lh, ldi_ev_cookie_t ecookie,
     int ldi_result, void *arg, void *ev_data)
 {
+	_NOTE(ARGUNUSED(lh, ev_data));
 	vdev_t *vd = (vdev_t *)arg;
 
 	/*
@@ -175,12 +172,6 @@ vdev_disk_off_finalize(ldi_handle_t lh, ldi_ev_cookie_t ecookie,
 	 */
 	if (strcmp(ldi_ev_get_type(ecookie), LDI_EV_OFFLINE) != 0)
 		return;
-
-	/*
-	 * We have already closed the LDI handle in notify.
-	 * Clean up the LDI event callbacks and free vd->vdev_tsd.
-	 */
-	vdev_disk_free(vd);
 
 	/*
 	 * Request that the vdev be reopened if the offline state change was
@@ -198,11 +189,11 @@ static ldi_ev_callback_t vdev_disk_off_callb = {
 	.cb_finalize = vdev_disk_off_finalize
 };
 
-/* ARGSUSED */
 static void
 vdev_disk_dgrd_finalize(ldi_handle_t lh, ldi_ev_cookie_t ecookie,
     int ldi_result, void *arg, void *ev_data)
 {
+	_NOTE(ARGUNUSED(lh, ldi_result, ev_data));
 	vdev_t *vd = (vdev_t *)arg;
 
 	/*
@@ -326,17 +317,8 @@ vdev_disk_open(vdev_t *vd, uint64_t *psize, uint64_t *max_psize,
 	 * just update the physical size of the device.
 	 */
 	if (dvd != NULL) {
-		if (dvd->vd_ldi_offline && dvd->vd_lh == NULL) {
-			/*
-			 * If we are opening a device in its offline notify
-			 * context, the LDI handle was just closed. Clean
-			 * up the LDI event callbacks and free vd->vdev_tsd.
-			 */
-			vdev_disk_free(vd);
-		} else {
-			ASSERT(vd->vdev_reopening);
-			goto skip_open;
-		}
+		ASSERT(vd->vdev_reopening);
+		goto skip_open;
 	}
 
 	/*
@@ -768,14 +750,6 @@ vdev_disk_close(vdev_t *vd)
 	}
 
 	vd->vdev_delayed_close = B_FALSE;
-	/*
-	 * If we closed the LDI handle due to an offline notify from LDI,
-	 * don't free vd->vdev_tsd or unregister the callbacks here;
-	 * the offline finalize callback or a reopen will take care of it.
-	 */
-	if (dvd->vd_ldi_offline)
-		return;
-
 	vdev_disk_free(vd);
 }
 
@@ -811,17 +785,16 @@ static int
 vdev_disk_dumpio(vdev_t *vd, caddr_t data, size_t size,
     uint64_t offset, uint64_t origoffset, boolean_t doread, boolean_t isdump)
 {
+	_NOTE(ARGUNUSED(origoffset));
 	vdev_disk_t *dvd = vd->vdev_tsd;
 	int flags = doread ? B_READ : B_WRITE;
 
 	/*
 	 * If the vdev is closed, it's likely in the REMOVED or FAULTED state.
 	 * Nothing to be done here but return failure.
-	 *
-	 * XXX-mg there is still a race here with off_notify
 	 */
 	if (dvd == NULL || dvd->vd_ldi_offline) {
-		return (EIO);
+		return (SET_ERROR(ENXIO));
 	}
 
 	ASSERT(vd->vdev_ops == &vdev_disk_ops);
@@ -905,7 +878,7 @@ vdev_disk_io_start(zio_t *zio)
 	 * If the vdev is closed, it's likely in the REMOVED or FAULTED state.
 	 * Nothing to be done here but return failure.
 	 */
-	if (dvd == NULL || (dvd->vd_ldi_offline && dvd->vd_lh == NULL)) {
+	if (dvd == NULL || dvd->vd_ldi_offline) {
 		zio->io_error = ENXIO;
 		zio_interrupt(zio);
 		return;
